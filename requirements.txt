@@ -1,0 +1,10 @@
+aiofiles
+dnspython
+fastapi
+passlib[bcrypt]
+pydantic[email]
+pyjwt
+python-dotenv
+python-multipart
+motor
+uvicorn
