@@ -7,8 +7,13 @@ Vue.use(VueRouter)
 const routes = [
   {
     path: '/',
-    name: 'Home',
-    component: Home
+    name: 'Baseline',
+    component: () => import('../views/Baseline.vue')
+  },
+  {
+    path: '/center',
+    name: 'Centered',
+    component: () => import('../views/Centered.vue')
   },
   {
     path: '/about',
