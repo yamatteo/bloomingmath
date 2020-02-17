@@ -4,11 +4,12 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 from starlette.middleware.cors import CORSMiddleware
-# from routers import ...
+from routers import users, nodes, groups
 from starlette.responses import HTMLResponse
 from starlette.responses import PlainTextResponse
 from starlette.staticfiles import StaticFiles
 
+from fastapi.security import OAuth2PasswordBearer
 from extensions.mongo import mongo_engine
 
 load_dotenv()
@@ -17,7 +18,7 @@ MONGODB_URI = getenv("MONGODB_URI")
 MAX_FIND = int(getenv("MAX_FIND", 50))
 
 # Create fastapi application with rendering engine, motor mongodb connection, static files and signaling system
-app = FastAPI(title="App title")
+app = FastAPI(title="Bloomingmath")
 
 app.mount("/static", StaticFiles(directory="../dist"), name="static")
 mongo_engine.init_app(app, uri=MONGODB_URI, env=FASTAPI_ENVIRONMENT)
@@ -29,6 +30,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/urlencode_login")
 
 
 @app.exception_handler(RequestValidationError)
@@ -61,8 +64,9 @@ async def read_root():
     with open("../dist/index.html", "r") as f:
         return f.read()
 
-#Include routers
-# app.include_router(...router, prefix="/...")
+app.include_router(users.router, prefix="/users", tags=["users"])
+app.include_router(groups.router, prefix="/groups", tags=["groups"])
+app.include_router(nodes.router, prefix="/nodes", tags=["nodes"])
 
 if __name__ == "__main__":
     from uvicorn import run

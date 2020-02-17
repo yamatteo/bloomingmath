@@ -35,17 +35,26 @@ def get_id(obj):
                     raise ValueError(f"Can't find id in {obj!r}.")
 
 
-def fix_object_id(obj):
-    try:
-        d = dict(obj)
-        d["_id"] = get_id(obj)
+def fix_object_id(obj, force=False):
+    if force and isinstance(obj, (str, ObjectId)):
         try:
-            del d["id"]
-        except LookupError:
-            pass
-        return d
-    except (ValueError, TypeError):
+            return get_id(obj)
+        except ValueError:
+            return obj
+    if force and isinstance(obj, list):
+        return [ fix_object_id(item, force=True) for item in obj ]
+    if isinstance(obj, dict):
+        if "_id" in obj.keys():
+            obj["_id"] = fix_object_id(obj["_id"], force=True)
+        elif "id" in obj.keys():
+            obj["_id"] = fix_object_id(obj["id"], force=True)
+        if "id" in obj.keys():
+            del obj["id"]
+        for key, value in obj.items():
+            if key != "id" and key != "_id":
+                obj[key] = fix_object_id(value, force=force)
         return obj
+    return obj
 
 
 class ObjectIdStr(str):
