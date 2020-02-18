@@ -1,0 +1,135 @@
+from collections import namedtuple
+from multiprocessing import Process
+
+from bson import ObjectId
+from fastapi import FastAPI
+from motor.motor_asyncio import AsyncIOMotorClient
+from motor.motor_asyncio import AsyncIOMotorCollection
+from motor.motor_asyncio import AsyncIOMotorDatabase
+from pytest import fixture
+from pytest import mark, yield_fixture
+from pytest import raises
+from starlette.testclient import TestClient  # If problems arises with testing middleware, prefer async_asgi_testclient
+from uvicorn import run as uvicorn_run
+
+from .mongo import AlreadyInitializedError
+from .mongo import mongo_engine
+from .mongo import NotInitializedError
+from .mongodb_orm import ObjectId, BareModel, Optional, Union, One, Many, Maybe, bson
+from pydantic import ValidationError
+from random import choice, sample, randint
+from pprint import pprint
+
+import asyncio
+
+
+def test_bare_model():
+    a_id = ObjectId()
+    a_str = str(a_id)
+    no_str = "32421232543324"
+    m = BareModel(_id=a_id, collection_name="items")
+    BareModel(_id=a_str, collection_name="items")
+    with raises(ValidationError):
+        BareModel(_id=no_str, collection_name="items")
+    assert m.dict()["id"] == a_str
+    assert bson(m)["_id"] == a_id
+        
+@yield_fixture(scope="module")
+def event_loop(request):
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
+
+
+@fixture(scope="module")
+async def check_local_mongodb():
+    """Assure that a local mongodb server is running."""
+    import pymongo.errors
+    client = AsyncIOMotorClient(serverSelectionTimeoutMS=2000)
+    try:
+        await client.server_info()
+    except pymongo.errors.ServerSelectionTimeoutError:
+        raise pymongo.errors.ServerSelectionTimeoutError(
+            "A local mongodb server is needed for testing and does not seem to be running."
+        )
+
+
+@fixture(scope="module")
+async def setup(check_local_mongodb):
+    """Returns an AsyncIOMotorEngine, a FastAPI application and a Starlette TestClient."""
+    me = mongo_engine
+    app = FastAPI()
+    me.init_app(app)
+    process = Process(target=uvicorn_run,
+                      args=(app,),
+                      kwargs={
+                          "host": "127.0.0.1",
+                          "port": 8070,
+                          "log_level": "info"},
+                      daemon=True)
+    process.start()
+
+    # In normal use, it is unicorn that calls the startup handlers
+    for handler in app.router.lifespan.startup_handlers:
+        await handler()
+
+    client = TestClient(app=app, base_url="http://127.0.0.1:8070")
+    yield namedtuple("SETUP_TUPLE", "me app client")(me, app, client)
+
+    # In normal use, it is unicorn that calls the shutdown handlers
+    for handler in app.router.lifespan.shutdown_handlers:
+        await handler()
+
+    await me.client.drop_database(me.db)
+    process.terminate()
+
+
+class Item(BareModel):
+    collection_name: str = "items"
+    foo: str
+    over: One["Item"] = None
+
+
+class Drawer(BareModel):
+    collection_name: str = "drawers"
+    foo: str
+    items: Many["Item"] = []
+
+m = BareModel(_id=ObjectId(), collection_name="items")
+i1 = Item(_id=ObjectId(), foo="asd")
+i2 = Item(_id=ObjectId(), foo="fgh", over=i1)
+i3 = Item(_id=ObjectId(), foo="jkl", over=i2)
+d = Drawer(_id=ObjectId(), foo="qwe", items=[i1, i2, i3, m])
+#
+#
+# class Closet(Model):
+#     collection_name: str = "closets"
+#     name: str
+#     drawers: List[Union["Drawer", ObjectIdStr]]
+#
+#     def some_function(self):
+#         return 34
+
+
+@mark.asyncio
+async def test_models_creation(setup):
+    me, app, client = setup
+    item_ids = await Item.insert_many([
+        {
+            "foo": f"item {n}",
+        } for n in range(10)
+    ])
+    for i in range(10):
+        await Item.find_one_and_set(
+            find={"id": item_ids[i]},
+            data={"over": {"id": choice(item_ids), "collection_name": "items"}}
+        )
+    items = await Item.find()
+    drawer_ids = await Drawer.insert_many([
+        {
+            "foo": f"D{n}",
+            "items": sample(items, randint(0, 9))
+        } for n in range(10)
+    ])
+    drawers = await Drawer.find()
+    pprint(drawers[0])

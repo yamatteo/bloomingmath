@@ -1,4 +1,7 @@
-from extensions.mongo_orm import Model, EmailStr, Optional, List, Set, ObjectIdStr, ObjectId
+from extensions.mongodb_orm import BareModel as Model
+from extensions.mongodb_orm import One, Maybe, Many
+from pydantic import EmailStr
+from typing import Optional
 from extensions.security import verify_password, get_password_hash
 
 
@@ -21,12 +24,11 @@ class Node(Model):
     collection_name: str = "nodes"
     short: str
     long: Optional[str] = ""
-    # contents: List[Union["Content", ObjectIdStr]]
 
 
 class Group(Model):
     collection_name = "groups"
     short: str
     long: Optional[str] = ""
-    members: List[ObjectIdStr] = []
-    nodes: Set[ObjectIdStr] = set()
+    members: Many[User] = []
+    nodes: Many[Node] = []

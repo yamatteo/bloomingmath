@@ -38,11 +38,11 @@ export default new Vuex.Store({
       console.log("Commit >> groups = ", payload);
       state.groups = payload
     },
-    nodes (state, payload) {
-      console.log("Commit >> nodes = ", payload);
+    // nodes (state, payload) {
+    //   console.log("Commit >> nodes = ", payload);
       
-      state.nodes = payload
-    }
+    //   state.nodes = payload
+    // }
   },
   actions: {
     login_actualization (context, payload) {
@@ -77,20 +77,20 @@ export default new Vuex.Store({
         context.commit("current_user", null)
       });
 
-      context.dispatch("fetch_nodes")
+      // context.dispatch("fetch_nodes")
       context.dispatch("fetch_groups")
     },
-    fetch_nodes (context) {
-      console.log("Action >> fetch_nodes ...");
-      Vue.axios.get("/nodes/current").then((response) => {
-        console.log("Backend >> ", response.data);
-        context.commit("nodes", response.data)
-      }).catch((err) => {
-        console.log("Error >> ", err);
+    // fetch_nodes (context) {
+    //   console.log("Action >> fetch_nodes ...");
+    //   Vue.axios.get("/nodes/current").then((response) => {
+    //     console.log("Backend >> ", response.data);
+    //     context.commit("nodes", response.data)
+    //   }).catch((err) => {
+    //     console.log("Error >> ", err);
         
-      })
+    //   })
       
-    }
+    // }
   },
   modules: {
   }

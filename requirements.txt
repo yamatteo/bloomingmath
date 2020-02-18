@@ -6,5 +6,14 @@ pydantic[email]
 pyjwt
 python-dotenv
 python-multipart
+pytypes
 motor
 uvicorn
+
+# Testing
+async-asgi-testclient
+async-exit-stack
+async-generator
+pytest
+pytest-asyncio
+requests

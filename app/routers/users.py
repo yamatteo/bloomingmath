@@ -1,18 +1,24 @@
+from typing import Optional
+
 from fastapi import APIRouter, Form, Depends, HTTPException
-from extensions.security import get_password_hash, create_access_token, decode_token
-from models import User, Group, Optional
-from schemas import SignupForm, LoginForm, ValidationError
+
+from extensions.security import get_password_hash, create_access_token
+from models import User, Group, Node
 from routers import get_current_user
+from schemas import SignupForm, LoginForm, ValidationError
 
 router = APIRouter()
 
 
-
 @router.get("/current/")
-async def current_user(current_user: User = Depends(get_current_user)):
-    cu_groups = [group.dict() for group in await Group.find({"members": current_user.id})]
-    result = current_user.dict()
-    result["groups"] = cu_groups
+async def get_current_user(current_user: User = Depends(get_current_user)):
+    cu_groups = await Group.find({"members": current_user})
+    nodes_ids = [node.id for group in cu_groups for node in group.nodes]
+    cu_nodes = await Node.find({"id": {"$in": nodes_ids}})
+    result = current_user.export()
+    result["groups"] = [group.export() for group in cu_groups]
+    result["nodes"] = [node.export() for node in cu_nodes]
+    print("Current user:", result)
     return result
 
 
