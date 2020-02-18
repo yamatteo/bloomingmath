@@ -45,16 +45,15 @@ export default new Vuex.Store({
     // }
   },
   actions: {
-    login_actualization (context, payload) {
+    async login_actualization (context, payload) {
       console.log("Action >> login_actualization", payload);
 
       context.commit("authtoken", payload)
       if (payload != null) {
-        context.dispatch("fetch_current_user");
-        context.dispatch("fetch_nodes");
+        await context.dispatch("fetch_current_user");
       }
     },
-    fetch_groups (context) {
+    async fetch_groups (context) {
       console.log("Action >> fetch_groups ...");
       
       Vue.axios.get("/groups/browse").then((response) => {
@@ -65,7 +64,7 @@ export default new Vuex.Store({
         
       })
     },
-    fetch_current_user (context) {
+    async fetch_current_user (context) {
       console.log("Action >> fetch_current_user ...");
       
       Vue.axios.get("/users/current").then((response) => {
@@ -78,7 +77,7 @@ export default new Vuex.Store({
       });
 
       // context.dispatch("fetch_nodes")
-      context.dispatch("fetch_groups")
+      await context.dispatch("fetch_groups")
     },
     // fetch_nodes (context) {
     //   console.log("Action >> fetch_nodes ...");

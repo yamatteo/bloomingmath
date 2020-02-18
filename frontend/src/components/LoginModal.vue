@@ -79,7 +79,6 @@ export default {
     attempt_login() {
       console.log("Attempting login...");
       this.dismiss_alert_message();
-      let store = this.$store;
       this.axios
         .post("/users/login", {
           email: this.$data.email,
@@ -88,16 +87,18 @@ export default {
         .then(result => {
           console.log("Backend >> ", result.data);
           this.$session.set("authtoken", result.data.access_token);
-          this.$store.dispatch("login_actualization", result.data.access_token);
-          store.commit("see_modal", null);
+          this.$store.dispatch("login_actualization", result.data.access_token).then(() => {
+            this.$store.commit("see_modal", null);
+          });
         })
         .catch(err => {
           console.log("Error >> ", err);
           this.$data.alert_message = "Qualcosa è andato storto. Riprova...";
-          this.$store.dispatch("login_actualization", null);
-          store.commit("see_flash_modal", {
-            text: "Accesso non riuscito!",
-            variant: "warning"
+          this.$store.dispatch("login_actualization", null).then(() => {
+            this.$store.commit("see_flash_modal", {
+              text: "Accesso non riuscito!",
+              variant: "warning"
+            });
           });
         });
     },
