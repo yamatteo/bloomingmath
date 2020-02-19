@@ -7,9 +7,7 @@
         <b-col cols="12" sm="10" md="8">
           <h1>I tuoi contenuti</h1>
           <div v-if="nodes.length">
-            <ul>
-              <li v-for="node in nodes" :key="node.id">{{ node.short }}</li>
-            </ul>
+            <NodeCard v-for="node in nodes" :key="node.id" :node="node" />
           </div>
           <div v-else>
             <p>Non hai nessun argomento disponibile. Prova ad entrare nel tuo profilo e selezionare alcuni gruppi di cui far parte.</p>
@@ -25,11 +23,14 @@
 export default {
   props: {},
   components: {
-    Navbar: () => import("@/components/Navbar")
+    Navbar: () => import("@/components/Navbar"),
+    NodeCard: () => import("@/components/NodeCard")
   },
   computed: {
     nodes() {
-      return this.$store.state.current_user.nodes
+      if (this.$store.state.current_user)
+        return this.$store.state.current_user.nodes;
+      else return [];
     }
   }
 };

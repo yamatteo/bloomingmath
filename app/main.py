@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 from starlette.middleware.cors import CORSMiddleware
-from routers import users, nodes, groups
+from routers import users, contents, nodes, groups
 from starlette.responses import HTMLResponse
 from starlette.responses import PlainTextResponse
 from starlette.staticfiles import StaticFiles
@@ -65,8 +65,9 @@ async def read_root():
         return f.read()
 
 app.include_router(users.router, prefix="/users", tags=["users"])
-app.include_router(groups.router, prefix="/groups", tags=["groups"])
 app.include_router(nodes.router, prefix="/nodes", tags=["nodes"])
+app.include_router(contents.router, prefix="/contents", tags=["contents"])
+app.include_router(groups.router, prefix="/groups", tags=["groups"])
 
 if __name__ == "__main__":
     from uvicorn import run

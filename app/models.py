@@ -20,10 +20,18 @@ class User(Model):
         return self
 
 
+class Content(Model):
+    collection_name: str = "contents"
+    short: str
+    long: Optional[str] = ""
+    filetype: str
+
+
 class Node(Model):
     collection_name: str = "nodes"
     short: str
     long: Optional[str] = ""
+    contents: Many[Content] = []
 
 
 class Group(Model):
