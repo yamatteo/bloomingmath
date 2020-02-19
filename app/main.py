@@ -36,12 +36,28 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/urlencode_login")
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request, exc):
+    from datetime import datetime
+    from traceback import format_exc
+    with open("server_error.log", "a") as f:
+        f.write("\n" + "#" * 40 + "\n")
+        f.write(f"INVALID REQUEST {datetime.now().ctime()}\n\n")
+        for line in format_exc().splitlines():
+            f.write(line + "\n")
+        f.write("#" * 40 + "\n")
     print("Exception >>", exc)
     return PlainTextResponse(str(exc), status_code=422)
 
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request, exc):
+    from datetime import datetime
+    from traceback import format_exc
+    with open("server_error.log", "a") as f:
+        f.write("\n" + "#" * 40 + "\n")
+        f.write(f"HTTP EXCEPTION {datetime.now().ctime()}\n\n")
+        for line in format_exc().splitlines():
+            f.write(line + "\n")
+        f.write("#" * 40 + "\n")
     print("Exception >>", str(exc.status_code), str(exc.detail))
     return PlainTextResponse(str(exc), status_code=exc.status_code, headers=exc.headers)
 

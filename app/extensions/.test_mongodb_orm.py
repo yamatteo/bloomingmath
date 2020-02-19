@@ -57,7 +57,7 @@ async def check_local_mongodb():
 @fixture(scope="module")
 async def setup(check_local_mongodb):
     """Returns an AsyncIOMotorEngine, a FastAPI application and a Starlette TestClient."""
-    me = mongo_engine
+    me = mongo_engine@mark.asyncio
     app = FastAPI()
     me.init_app(app)
     process = Process(target=uvicorn_run,
@@ -132,4 +132,4 @@ async def test_models_creation(setup):
         } for n in range(10)
     ])
     drawers = await Drawer.find()
-    pprint(drawers[0])
+    # pprint(drawers[0])

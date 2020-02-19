@@ -12,6 +12,6 @@ cd ..
 
 heroku container:login
 
-heroku container:push web
+heroku container:push web --app bloomingmath
 
-heroku container:release web
+heroku container:release web --app bloomingmath
