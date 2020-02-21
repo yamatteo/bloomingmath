@@ -3,43 +3,33 @@ from fastapi.exceptions import RequestValidationError, HTTPException
 from starlette.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from starlette.responses import PlainTextResponse
+from datetime import datetime
+from traceback import format_exc
+from logging import info, error
 
-
-async def validation_exception_handler(request: Request, exc: RequestValidationError) -> PlainTextResponse:
-    from datetime import datetime
-    from traceback import format_exc
+def log_to_file(title):
     with open("server_error.log", "a") as f:
         f.write("\n" + "#" * 40 + "\n")
-        f.write(f"INVALID REQUEST {datetime.now().ctime()}\n\n")
+        f.write(f"{title} {datetime.now().ctime()}\n\n")
         for line in format_exc().splitlines():
             f.write(line + "\n")
         f.write("#" * 40 + "\n")
-    print("Exception >>", exc)
+
+async def validation_exception_handler(request: Request, exc: RequestValidationError) -> PlainTextResponse:
+    # log_to_file("Invalid request")
+    info(f"Tamed exception >> 422 see below...\n{str(exc)}")
     return PlainTextResponse(str(exc), status_code=422)
 
 
 async def http_exception_handler(request: Request, exc: HTTPException) -> PlainTextResponse:
-    from datetime import datetime
-    from traceback import format_exc
-    with open("server_error.log", "a") as f:
-        f.write("\n" + "#" * 40 + "\n")
-        f.write(f"HTTP EXCEPTION {datetime.now().ctime()}\n\n")
-        for line in format_exc().splitlines():
-            f.write(line + "\n")
-        f.write("#" * 40 + "\n")
-    print("Exception >>", str(exc.status_code), str(exc.detail))
+    # log_to_file("HTTP Exception")
+    info(f"Tamed exception >> {str(exc.status_code)} {str(exc.detail)}")
     return PlainTextResponse(str(exc), status_code=exc.status_code, headers=exc.headers)
 
 
 async def server_error_handler(request: Request, exc: Exception) -> PlainTextResponse:
-    from datetime import datetime
-    from traceback import format_exc
-    with open("server_error.log", "a") as f:
-        f.write("\n" + "#" * 40 + "\n")
-        f.write(f"UNHANDLED ERROR {datetime.now().ctime()}\n\n")
-        for line in format_exc().splitlines():
-            f.write(line + "\n")
-        f.write("#" * 40 + "\n")
+    log_to_file("UNHANDLED EXCEPTION")
+    error(f"Unhandled exception >> str(exc)")
     return PlainTextResponse(str(exc), status_code=500)
 
 

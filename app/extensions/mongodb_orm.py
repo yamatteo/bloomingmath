@@ -86,6 +86,7 @@ class Model(BaseModel, metaclass=ObjectsProperty):
     id: ObjectIdStr = Field(..., alias="_id")
     collection_name: str = Field(...)
 
+    # TODO add uniqueness constraints
     class Config:
         allow_population_by_field_name = True
         json_encoders = {

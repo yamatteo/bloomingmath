@@ -13,7 +13,7 @@ router = APIRouter()
 
 
 @router.get("/{content_id}")
-async def read_content(content_id: str):
+async def download_content(content_id: str):
     # TODO shift the file interface inside mongodb_orm
     with TemporaryFile() as file:
         fsfile = await mongo_engine.db["fs.files"].find_one({"_id": ObjectId(content_id)})

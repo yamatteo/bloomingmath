@@ -32,9 +32,7 @@ export default {
     }
   },
   mounted () {
-    this.$store.dispatch("login_actualization", this.$session.get("authtoken", null)).then(() => {
-      this.$store.dispatch("fetch_groups")     
-    })
+    this.$store.dispatch("login_actualization", this.$session.get("authtoken", null))
   }
 };
 </script>

@@ -24,6 +24,10 @@ middleware_engine.init_app(app)
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root():
+    if FASTAPI_ENVIRONMENT == "development":
+        from tests.conftest import populate
+
+        await populate()
     with open("../dist/index.html", "r") as f:
         return f.read()
 
@@ -32,6 +36,7 @@ async def read_root():
 async def reset_development_database():
     if FASTAPI_ENVIRONMENT == "development":
         from tests.conftest import populate
+
         await populate()
     else:
         raise RuntimeError("Not in development environment!")

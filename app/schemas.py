@@ -1,7 +1,9 @@
-from pydantic import BaseModel, EmailStr, validator, root_validator, ValidationError
+from typing import Optional
+
+from pydantic import BaseModel, EmailStr, validator, root_validator
 
 
-class SignupForm(BaseModel):
+class UserSignup(BaseModel):
     email: EmailStr
     password: str
     password_confirmation: str
@@ -20,7 +22,7 @@ class SignupForm(BaseModel):
         return values
 
 
-class LoginForm(BaseModel):
+class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
@@ -29,3 +31,22 @@ class LoginForm(BaseModel):
         if len(value) == 0:
             raise ValueError("Password can't be an empty string.")
         return value
+
+
+class UserFindOne(BaseModel):
+    id: Optional[str]
+    email: Optional[str]
+
+
+class UserAdd(BaseModel):
+    email: EmailStr
+    password: str
+    is_admin: bool = False
+    is_blocked: bool = False
+
+
+class UserEdit(BaseModel):
+    email: Optional[EmailStr]
+    password: Optional[str]
+    is_admin: Optional[bool]
+    is_blocked: Optional[bool]

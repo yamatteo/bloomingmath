@@ -16,10 +16,6 @@ from main import app
 
 # from multiprocessing import Process
 
-# This is not sure: I'm using pytest-asyncio and it start a loop;
-# inside of that loop I start a TestClient which needs a loop for itself; that is why I need to apply nest_asyncio.
-nest_asyncio.apply()
-
 
 # This is not sure: pytest-asyncio run coroutine test and so needs an event_loop.
 # If I want a package scoped fixture I need to provide a package scoped event_loop.
@@ -63,6 +59,10 @@ async def setup():
     for handler in app.router.lifespan.startup_handlers:
         await handler()
 
+    # This is not sure: I'm using pytest-asyncio and it start a loop;
+    # inside of that loop I start a TestClient which needs a loop for itself; that is why I need to apply nest_asyncio.
+    nest_asyncio.apply()
+
     client = TestClient(app=app, base_url="http://127.0.0.1:8080")
 
     # At each test the database is dropped. Need to make some objects to speedup tests.
@@ -90,6 +90,7 @@ async def setup():
 
 
 async def populate():
+    await me.db.drop_collection("users")
     user_id = (await me.collection("users").insert_one({
         "email": "user@example.com",
         "password_hash": get_password_hash("pass"),
