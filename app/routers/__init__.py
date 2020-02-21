@@ -1,4 +1,6 @@
-from fastapi import Depends, HTTPException
+from typing import Any
+
+from fastapi import Depends, HTTPException, Body
 from fastapi.security import OAuth2PasswordBearer
 from jwt import PyJWTError
 
@@ -40,3 +42,7 @@ async def admin_only(token: str = Depends(oauth2_scheme)):
             detail="Could not validate credentials",
             headers={"Authorization": "Bearer"},
         )
+
+
+def Inbody(default: Any, *args, **kwargs) -> Any:
+    return Body(default, *args, embed=True, **kwargs)

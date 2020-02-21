@@ -1,4 +1,4 @@
-from extensions.mongodb_orm import BareModel as Model
+from extensions.mongodb_orm import Model as Model
 from extensions.mongodb_orm import One, Maybe, Many
 from pydantic import EmailStr
 from typing import Optional

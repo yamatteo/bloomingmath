@@ -8,12 +8,13 @@ from extensions.mongo import mongo_engine
 from tempfile import TemporaryFile
 from starlette.responses import Response
 from bson import ObjectId
-#
+
 router = APIRouter()
 
 
 @router.get("/{content_id}")
 async def read_content(content_id: str):
+    # TODO shift the file interface inside mongodb_orm
     with TemporaryFile() as file:
         fsfile = await mongo_engine.db["fs.files"].find_one({"_id": ObjectId(content_id)})
         content = Content.parse_obj(fsfile["metadata"])

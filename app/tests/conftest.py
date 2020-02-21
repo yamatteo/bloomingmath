@@ -1,17 +1,28 @@
 from asyncio import get_event_loop_policy
 from collections import namedtuple
-from multiprocessing import Process
 
-from fastapi import FastAPI
+import nest_asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
 from pytest import fixture
 from pytest import yield_fixture
 from starlette.testclient import TestClient  # If problems arises with testing middleware, prefer async_asgi_testclient
-from uvicorn import run as uvicorn_run
 
+# from uvicorn import run as uvicorn_run
 from extensions.mongo import mongo_engine
+from extensions.mongo import mongo_engine as me
+from extensions.security import create_access_token
+from extensions.security import get_password_hash
+from main import app
+
+# from multiprocessing import Process
+
+# This is not sure: I'm using pytest-asyncio and it start a loop;
+# inside of that loop I start a TestClient which needs a loop for itself; that is why I need to apply nest_asyncio.
+nest_asyncio.apply()
 
 
+# This is not sure: pytest-asyncio run coroutine test and so needs an event_loop.
+# If I want a package scoped fixture I need to provide a package scoped event_loop.
 @yield_fixture(scope="package")
 def event_loop(request):
     loop = get_event_loop_policy().new_event_loop()
@@ -19,6 +30,8 @@ def event_loop(request):
     loop.close()
 
 
+# Sometimes test fails and it take a long time to figure out that simply mongod is not running locally.
+# This fixture provides immediately that useful information.
 @fixture(scope="package", autouse=True)
 async def check_local_mongodb():
     """Assure that a local mongodb server is running."""
@@ -35,52 +48,32 @@ async def check_local_mongodb():
 @fixture(scope="package")
 async def setup():
     """Returns an AsyncIOMotorEngine, a FastAPI application and a Starlette TestClient."""
-    from extensions.mongo import mongo_engine
-    from main import app
-
     me = mongo_engine
-    process = Process(target=uvicorn_run,
-                      args=(app,),
-                      kwargs={
-                          "host": "127.0.0.1",
-                          "port": 8070,
-                          "log_level": "info"},
-                      daemon=True)
-    process.start()
-
-    import nest_asyncio
-    nest_asyncio.apply()
+    # # This was an old way of running the server. Looks like TestClient is enough.
+    # process = Process(target=uvicorn_run,
+    #                   args=(app,),
+    #                   kwargs={
+    #                       "host": "127.0.0.1",
+    #                       "port": 8070,
+    #                       "log_level": "info"},
+    #                   daemon=True)
+    # process.start()
 
     # In normal use, it is unicorn that calls the startup handlers
     for handler in app.router.lifespan.startup_handlers:
         await handler()
 
-    client = TestClient(app=app, base_url="http://127.0.0.1:8070")
+    client = TestClient(app=app, base_url="http://127.0.0.1:8080")
 
-    # TODO setup usual user and admin
-    from extensions.security import get_password_hash
-    user_id = (await me.collection("users").insert_one({
-        "email": "user@example.com",
-        "password_hash": get_password_hash("pass"),
-    })).inserted_id
-    admin_id = (await me.collection("users").insert_one({
-        "email": "admin@example.com",
-        "password_hash": get_password_hash("pass"),
-        "is_admin": True,
-    })).inserted_id
-
-    from extensions.security import create_access_token
-    user_token = create_access_token(
-        data={"sub": str(user_id)}
-    )
-    admin_token = create_access_token(
-        data={"sub": str(admin_id)}
-    )
+    # At each test the database is dropped. Need to make some objects to speedup tests.
+    admin_token, user_token = await populate()
 
     def admin_login():
         client.headers.update({"Authorization": f"Bearer {admin_token.decode('utf-8')}"})
+
     def user_login():
         client.headers.update({"Authorization": f"Bearer {user_token.decode('utf-8')}"})
+
     def logout():
         client.headers.update({"Authorization": "Bearer"})
 
@@ -91,4 +84,26 @@ async def setup():
         await handler()
 
     await me.client.drop_database(me.db)
-    process.terminate()
+    
+    # If the process is forken in the setpu it should terminate in the teardown.
+    # process.terminate()
+
+
+async def populate():
+    user_id = (await me.collection("users").insert_one({
+        "email": "user@example.com",
+        "password_hash": get_password_hash("pass"),
+    })).inserted_id
+    admin_id = (await me.collection("users").insert_one({
+        "email": "admin@example.com",
+        "password_hash": get_password_hash("pass"),
+        "is_admin": True,
+    })).inserted_id
+
+    user_token = create_access_token(
+        data={"sub": str(user_id)}
+    )
+    admin_token = create_access_token(
+        data={"sub": str(admin_id)}
+    )
+    return admin_token, user_token

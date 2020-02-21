@@ -129,4 +129,4 @@ dmypy.json
 .pyre/
 
 .idea
-/not_working_tests/
+/.not_working_tests/

@@ -12,8 +12,6 @@ router = APIRouter()
 
 @router.get("/current/")
 async def get_current_user(current_user: User = Depends(get_current_user)):
-    # from asyncio import sleep
-    # await sleep(2)
     cu_groups = await Group.find({"members": current_user})
     nodes_ids = [node.id for group in cu_groups for node in group.nodes]
     cu_nodes = await Node.find({"id": {"$in": nodes_ids}})
@@ -22,8 +20,6 @@ async def get_current_user(current_user: User = Depends(get_current_user)):
     result = current_user.export()
     result["groups"] = [group.export() for group in cu_groups]
     result["nodes"] = [node.export() for node in cu_nodes]
-    # from pprint import pprint
-    # pprint(result)
     return result
 
 
@@ -47,6 +43,7 @@ async def login(login_form: LoginForm):
 @router.post("/urlencode_login")
 async def urlencode_login(username: str = Form(...), password: str = Form(...)):
     login_form = LoginForm(email=username, password=password)
+    print(login_form)
     try:
         user: Optional[User] = await User.find_one({"email": login_form.email})
         assert user.authenticate(login_form.password)
@@ -57,7 +54,7 @@ async def urlencode_login(username: str = Form(...), password: str = Form(...)):
     except (ValidationError, KeyError, AttributeError, AssertionError):
         raise HTTPException(
             status_code=401,
-            detail="Incorrect username or password",
+            detail="Incorrect username or password.",
             headers={"Authorization": "Bearer"},
         )
 

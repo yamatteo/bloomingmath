@@ -15,11 +15,25 @@ from uvicorn import run as uvicorn_run
 from .mongo import AlreadyInitializedError
 from .mongo import mongo_engine
 from .mongo import NotInitializedError
-from .mongo_orm import Model, ObjectIdStr, List, Union, Set
+from .mongodb_orm import ObjectId, Model, Optional, Union, One, Many, Maybe, to_mongo
+from pydantic import ValidationError
+from random import choice, sample, randint
+from pprint import pprint
 
 import asyncio
 
 
+def test_bare_model():
+    a_id = ObjectId()
+    a_str = str(a_id)
+    no_str = "32421232543324"
+    m = Model(_id=a_id, collection_name="items")
+    Model(_id=a_str, collection_name="items")
+    with raises(ValidationError):
+        Model(_id=no_str, collection_name="items")
+    assert m.dict()["id"] == a_str
+    assert to_mongo(m)["_id"] == a_id
+        
 @yield_fixture(scope="module")
 def event_loop(request):
     loop = asyncio.get_event_loop_policy().new_event_loop()
@@ -43,14 +57,14 @@ async def check_local_mongodb():
 @fixture(scope="module")
 async def setup(check_local_mongodb):
     """Returns an AsyncIOMotorEngine, a FastAPI application and a Starlette TestClient."""
-    me = mongo_engine
+    me = mongo_engine@mark.asyncio
     app = FastAPI()
     me.init_app(app)
     process = Process(target=uvicorn_run,
                       args=(app,),
                       kwargs={
                           "host": "127.0.0.1",
-                          "port": 8080,
+                          "port": 8070,
                           "log_level": "info"},
                       daemon=True)
     process.start()
@@ -59,7 +73,7 @@ async def setup(check_local_mongodb):
     for handler in app.router.lifespan.startup_handlers:
         await handler()
 
-    client = TestClient(app=app, base_url="http://127.0.0.1:8080")
+    client = TestClient(app=app, base_url="http://127.0.0.1:8070")
     yield namedtuple("SETUP_TUPLE", "me app client")(me, app, client)
 
     # In normal use, it is unicorn that calls the shutdown handlers
@@ -72,43 +86,50 @@ async def setup(check_local_mongodb):
 
 class Item(Model):
     collection_name: str = "items"
-    foo: int
-    bar: str
+    foo: str
+    over: One["Item"] = None
 
 
 class Drawer(Model):
     collection_name: str = "drawers"
-    color: str
-    items: Set[Union["Item", ObjectIdStr]]
+    foo: str
+    items: Many["Item"] = []
 
-
-class Closet(Model):
-    collection_name: str = "closets"
-    name: str
-    drawers: List[Union["Drawer", ObjectIdStr]]
-
-    def some_function(self):
-        return 34
+m = Model(_id=ObjectId(), collection_name="items")
+i1 = Item(_id=ObjectId(), foo="asd")
+i2 = Item(_id=ObjectId(), foo="fgh", over=i1)
+i3 = Item(_id=ObjectId(), foo="jkl", over=i2)
+d = Drawer(_id=ObjectId(), foo="qwe", items=[i1, i2, i3, m])
+#
+#
+# class Closet(Model):
+#     collection_name: str = "closets"
+#     name: str
+#     drawers: List[Union["Drawer", ObjectIdStr]]
+#
+#     def some_function(self):
+#         return 34
 
 
 @mark.asyncio
 async def test_models_creation(setup):
     me, app, client = setup
-    ids = await Item.insert_many([
-        {"foo": 1, "bar": "baz"},
-        {"foo": 2, "bar": "bar"},
-        {"foo": 3, "bar": "baz"},
-        {"foo": 4, "bar": "baz"},
-        {"foo": 5, "bar": "bar"},
-        {"foo": 6, "bar": "bar"},
+    item_ids = await Item.insert_many([
+        {
+            "foo": f"item {n}",
+        } for n in range(10)
     ])
-    drawers_ids = await Drawer.insert_many([
-        {"color": "white", "items": ids[0:2]},
-        {"color": "black", "items": ids[2:4]},
-        {"color": "red", "items": {ids[5]}},
+    for i in range(10):
+        await Item.find_one_and_set(
+            find={"id": item_ids[i]},
+            data={"over": {"id": choice(item_ids), "collection_name": "items"}}
+        )
+    items = await Item.find()
+    drawer_ids = await Drawer.insert_many([
+        {
+            "foo": f"D{n}",
+            "items": sample(items, randint(0, 9))
+        } for n in range(10)
     ])
-    id = await Closet.insert_one({"name": "kitchen closet", "drawers": drawers_ids})
-    assert {'collection_name': 'closets',
-            'drawers': drawers_ids,
-            'id': id,
-            'name': 'kitchen closet'} == (await Closet.find_one({})).dict()
+    drawers = await Drawer.find()
+    # pprint(drawers[0])

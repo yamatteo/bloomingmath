@@ -3,7 +3,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, Body
 
 from models import User, Group, Node
-from routers import get_current_user, admin_only
+from routers import get_current_user, admin_only, Inbody
 
 #
 router = APIRouter()
@@ -74,7 +74,7 @@ async def edit_group(group_id: str = Body(..., embed=True), short: Optional[str]
 
 
 @router.post("/add")
-async def add_group(short: str, long: str, admin: User = Depends(admin_only)):
+async def add_group(short: str = Inbody(...), long: str = Inbody(...), admin: User = Depends(admin_only)):
     assert admin is not None
     return await Group.insert_one({"short": short, "long": long})
 
