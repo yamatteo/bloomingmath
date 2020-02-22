@@ -5,6 +5,7 @@ from typing import TypeVar
 from bson import ObjectId
 from bson.errors import InvalidId
 from dotenv import load_dotenv
+from fastapi import UploadFile
 from pydantic import BaseModel, Field
 from pydantic import ValidationError
 from pydantic.main import ModelMetaclass
@@ -218,7 +219,78 @@ class Model(BaseModel, metaclass=ObjectsProperty):
         }
 
 
-# Type shortcut for relationships
+class FileModel(BaseModel, metaclass=ObjectsProperty):
+    """Base class for model inheritance of file bearing model. Every model has an `id` and a `collection_name`."""
+    id: ObjectIdStr = Field("000000000000000000000000", alias="_id")
+    original_filename: str = Field("")
+    collection_name: str = Field(...)
+
+    # TODO add uniqueness constraints
+    class Config:
+        allow_population_by_field_name = True
+        json_encoders = {
+            ObjectId: lambda x: str(x),
+            ObjectIdStr: lambda x: str(x)
+        }
+
+    @classmethod
+    async def insert_one(cls: Type[T], content: UploadFile, data: dict) -> T:
+        grid_in, file_id = mongo_engine.fs.open_upload_stream(
+            content.filename,
+            metadata=to_mongo(cls.parse_obj(data))
+        )
+        with content.file as f:
+            await grid_in.write(f.read())
+            await grid_in.set("_id", file_id)
+            await grid_in.set("original_filename", content.filename)
+            await grid_in.close()
+        data["_id"] = file_id
+        return cls.parse_obj(data)
+
+    @classmethod
+    async def find(cls: Type[T], find: dict = {}) -> List[T]:
+        find = to_mongo(find)
+        cursor = mongo_engine.fs.find({"metadata": find}, no_cursor_timeout=True)
+        return [cls.parse_obj(grid_data.metadata) for grid_data in cursor]
+
+    @classmethod
+    async def find_one(cls: Type[T], find: dict) -> Optional[T]:
+        find = to_mongo(find)
+        cursor = mongo_engine.fs.find({"metadata": find}, no_cursor_timeout=True)
+        finds = [cls.parse_obj(grid_data.metadata) for grid_data in cursor]
+        try:
+            return finds.pop()
+        except IndexError:
+            return None
+
+    @classmethod
+    async def find_one_and_set(cls: Type[T], find: dict, data: dict) -> Optional[T]:
+        find = to_mongo(find)
+        data = to_mongo(data)
+        cursor = mongo_engine.fs.find({"metadata": find}, no_cursor_timeout=True)
+        finds = [cls.parse_obj(grid_data.metadata) for grid_data in cursor]
+        try:
+            obj = finds.pop()
+        except IndexError:
+            return None
+        grid_in, _ = mongo_engine.fs.open_upload_stream_with_id(file_id=obj.id, filename=obj.original_filename)
+        for key, value in data.items():
+            await grid_in.set(key, value)
+        await grid_in.close()
+        dobj = obj.dict()
+        dobj.update(data)
+        return cls.parse_obj(dobj)
+
+    @classmethod
+    async def delete(cls: Type[T], find: dict) -> None:
+        find = to_mongo(find)
+        cursor = mongo_engine.fs.find({"metadata": find}, no_cursor_timeout=True)
+        finds = [cls.parse_obj(grid_data.metadata) for grid_data in cursor]
+        for obj in finds:
+            await mongo_engine.fs.delete(ObjectId(obj.id))
+
+
+
 One = Union[T, Model]
 Many = List[One]
 Maybe = Union[T, None]

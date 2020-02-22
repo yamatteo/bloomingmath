@@ -1,4 +1,4 @@
-from extensions.mongodb_orm import Model as Model
+from extensions.mongodb_orm import Model, FileModel
 from extensions.mongodb_orm import One, Maybe, Many
 from pydantic import EmailStr
 from typing import Optional
@@ -20,10 +20,11 @@ class User(Model):
         return self
 
 
-class Content(Model):
+class Content(FileModel):
     collection_name: str = "contents"
     short: str
     long: Optional[str] = ""
+    original_filename: str = ""
     filetype: str
 
 

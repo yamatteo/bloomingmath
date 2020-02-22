@@ -24,10 +24,6 @@ middleware_engine.init_app(app)
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root():
-    if FASTAPI_ENVIRONMENT == "development":
-        from tests.conftest import populate
-
-        await populate()
     with open("../dist/index.html", "r") as f:
         return f.read()
 

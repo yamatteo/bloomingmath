@@ -1,5 +1,6 @@
 from asyncio import get_event_loop_policy
 from collections import namedtuple
+from logging import warning
 
 import nest_asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -13,6 +14,7 @@ from extensions.mongo import mongo_engine as me
 from extensions.security import create_access_token
 from extensions.security import get_password_hash
 from main import app
+
 
 # from multiprocessing import Process
 
@@ -84,13 +86,18 @@ async def setup():
         await handler()
 
     await me.client.drop_database(me.db)
-    
+
     # If the process is forken in the setpu it should terminate in the teardown.
     # process.terminate()
 
 
 async def populate():
+    from models import User, Content, Node, Group
+    warning(f"Setting a fresh development database.")
     await me.db.drop_collection("users")
+    await me.db.drop_collection("groups")
+    await me.db.drop_collection("nodes")
+    await me.db.drop_collection("contents")
     user_id = (await me.collection("users").insert_one({
         "email": "user@example.com",
         "password_hash": get_password_hash("pass"),
@@ -100,6 +107,28 @@ async def populate():
         "password_hash": get_password_hash("pass"),
         "is_admin": True,
     })).inserted_id
+
+    node_id = (await me.collection("nodes").insert_one({
+        "short": "Argument 10",
+        "long": "# Description of argument 10 \n\nLorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+        "contents": []
+    })).inserted_id
+
+    await me.collection("groups").insert_one({
+        "short": "First",
+        "long": "Description of the first group",
+        "members": [{
+            "_id": user_id,
+            "collection_name": "users"
+        }, {
+            "_id": admin_id,
+            "collection_name": "users"
+        }],
+        "nodes": [{
+            "_id": node_id,
+            "collection_name": "nodes"
+        }]
+    })
 
     user_token = create_access_token(
         data={"sub": str(user_id)}

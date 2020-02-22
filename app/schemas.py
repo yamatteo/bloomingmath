@@ -50,3 +50,18 @@ class UserEdit(BaseModel):
     password: Optional[str]
     is_admin: Optional[bool]
     is_blocked: Optional[bool]
+
+class ContentFind(BaseModel):
+    short: Optional[str]
+    filetype: Optional[str]
+    original_filename: Optional[str]
+
+class ContentAdd(BaseModel):
+    short: str
+    long: Optional[str]
+    filetype: str
+
+class ContentEdit(BaseModel):
+    short: Optional[str]
+    long: Optional[str]
+    filetype: Optional[str]

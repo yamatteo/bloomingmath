@@ -8,6 +8,8 @@ from extensions.mongo import mongo_engine
 from tempfile import TemporaryFile
 from starlette.responses import Response
 from bson import ObjectId
+from typing import List
+from schemas import *
 
 router = APIRouter()
 
@@ -26,48 +28,26 @@ async def download_content(content_id: str):
     })
 
 
-@router.get("/browse")
-async def browse_contents():
-    return [content.export() for content in await Content.find()]
+@router.api_route("/browse", methods=["GET", "POST"], dependencies=[Depends(admin_only)])
+async def browse_contents() -> List[Content]:
+    return await Content.find()
 
 
-@router.get("/read")
-async def read_content(content_id: str):
-    content = await Content.find_one({"id": content_id})
-    return content.export()
+@router.api_route("/read", methods=["GET", "POST"], dependencies=[Depends(admin_only)])
+async def read_content(find: ContentFind) -> Optional[Content]:
+    return await Content.find_one(find=find.dict(exclude_unset=True))
 
 
-@router.post("/add")
-async def add_content(content_data: UploadFile = File(...), content_short: str = Form(...),
-                      content_filetype: str = Form(...), admin: User = Depends(admin_only)):
-    print("Adding...")
-    file_id = await Content.insert_one({"short": content_short, "filetype": content_filetype})
-    grid_in = mongo_engine.fs.open_upload_stream_with_id(
-        file_id,
-        content_data.filename,
-        metadata={"short": content_short, "filetype": content_filetype, "id": file_id, "collection_name": "contents"}
-    )
-    with content_data.file as f:
-        await grid_in.write(f.read())
-        await grid_in.close()
-    return {"new content's id": str(file_id)}
+@router.api_route("/add", methods=["GET", "POST"], dependencies=[Depends(admin_only)])
+async def add_content(data: ContentAdd, content: UploadFile = File(...)) -> Content:
+    return await Content.insert_one(content=content, data=data.dict(exclude_unset=True))
 
 
-@router.post("/edit")
-async def edit_content(content_id: str, short: Optional[str] = None, long: Optional[str] = None,
-                       filetype: Optional[str] = None, admin: User = Depends(admin_only)):
-    assert admin is not None
-    data = {}
-    if short is not None:
-        data["short"] = short
-    if long is not None:
-        data["long"] = long
-    if filetype is not None:
-        data["filetype"] = filetype
-    return await Content.find_one_and_set(find={"id": content_id}, data=data)
+@router.api_route("/edit", methods=["GET", "POST"], dependencies=[Depends(admin_only)])
+async def edit_content(find: ContentFind, data: ContentEdit) -> Optional[Content]:
+    return await Content.find_one_and_set(find=find.dict(exclude_unset=True), data=data.dict(exclude_unset=True))
 
 
-@router.post("/delete")
-async def delete_content(content_id: str, admin: User = Depends(admin_only)):
-    assert admin is not None
-    return await Content.delete_one({"id": content_id})
+@router.api_route("/delete", methods=["GET", "POST"], dependencies=[Depends(admin_only)])
+async def delete_content(find: ContentFind) -> None:
+    await Content.delete(find=find.dict(exclude_unset=True))
