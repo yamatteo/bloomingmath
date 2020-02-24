@@ -1,13 +1,8 @@
-from fastapi import APIRouter, Depends, UploadFile, Form, File
-
-from tempfile import TemporaryFile
 from typing import List
 
-from bson import ObjectId
 from fastapi import APIRouter, Depends, UploadFile, Form, File
-from starlette.responses import Response
+from starlette.responses import StreamingResponse, FileResponse
 
-from extensions.mongo import mongo_engine
 from models import Content
 from routers import admin_only
 from schemas import *
@@ -44,12 +39,29 @@ async def edit_content(find: ContentFind, data: ContentEdit) -> Optional[Content
 async def delete_content(find: ContentFind) -> None:
     await Content.delete(find=find.dict(exclude_unset=True))
 
+from typing import Callable, List, Optional
+
+from fastapi import APIRouter, Depends
+from starlette.requests import Request
+from starlette.responses import Response
+
+from models import User, Node, Group, Content
+from extensions.mongo import mongo_engine
+from pprint import pprint
+import tempfile
+from bson import ObjectId
+
+router = APIRouter()
+
 
 @router.get("/{content_id}")
-async def download_content(content_id: str):
-    # TODO shift the file interface inside mongodb_orm
-    content = await Content.find_one({"id": content_id})
-    data = await Content.read(content_id)
-    return Response(content=data, media_type=f"application/{content.filetype}", headers={
-        "Content-Disposition": f"attachment; filename=\"{content.original_filename}\""
-    })
+async def read_content(content_id: str, request: Request):
+    with tempfile.TemporaryFile() as file:
+        grid_obj = (await mongo_engine.fs.find({"_id": ObjectId(content_id)}).to_list(length=5))[0]
+        content = Content.parse_obj(grid_obj["metadata"])
+        await mongo_engine.fs.download_to_stream(ObjectId(content_id), file)
+        pprint(content)
+        file.seek(0)
+        data = file.read()
+    return Response(content=data, media_type=f"application/{content.filetype}")
+

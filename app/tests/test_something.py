@@ -73,8 +73,8 @@ async def test_user_routine(setup):
     res = client.get("/users/current")
     data = loads(res.text)
     assert "nodes" in data.keys()
-    print(data)
-
+    res = client.get(f"/contents/{data['nodes'][0]['contents'][0]['id']}")
+    print(res.text)
 
 @mark.asyncio
 async def test_contents_rest(setup):

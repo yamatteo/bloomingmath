@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 from pydantic import ValidationError
 from pydantic.main import ModelMetaclass
 
-from .mongo import mongo_engine, AsyncIOMotorCollection, AsyncIOMotorCursor
+from .mongo import mongo_engine, AsyncIOMotorCollection
 
 load_dotenv()
 
@@ -51,16 +51,25 @@ def try_oid(value):
         return value
 
 
-def to_mongo(obj):
+def to_mongo(obj, only_ref=False, exclude_id=False):
     """Prepare an object for interaction with mongo_engine collection."""
     if isinstance(obj, str):
         return try_oid(obj)
     elif isinstance(obj, list):
-        return [to_mongo(item) for item in obj]
+        return [to_mongo(item, only_ref=only_ref, exclude_id=exclude_id) for item in obj]
     elif isinstance(obj, dict):
-        return {("_id" if key == "id" or key == "_id" else key): to_mongo(value) for key, value in obj.items()}
+        if exclude_id:
+            return {key: to_mongo(value, only_ref=only_ref, exclude_id=exclude_id) for key, value in obj.items() if
+                    key != "id" and key != "_id"}
+        else:
+            return {("_id" if key == "id" or key == "_id" else key): to_mongo(value, only_ref=only_ref,
+                                                                              exclude_id=exclude_id) for key, value in
+                    obj.items()}
     elif isinstance(obj, (Model, FileModel)):
-        return to_mongo(obj.dict(by_alias=True, include={"id", "collection_name"}))
+        if only_ref:
+            return to_mongo(obj.dict(by_alias=True, include={"id", "collection_name"}), only_ref=True, exclude_id=False)
+        else:
+            return to_mongo(dict(obj), only_ref=True, exclude_id=exclude_id)
     else:
         return obj
 
@@ -115,7 +124,7 @@ class Model(BaseModel, metaclass=ObjectsProperty):
     @classmethod
     async def insert_one(cls: Type[T], obj: dict) -> T:
         """Save the given object to database and return a model with the newly created id."""
-        obj = to_mongo(cls.new_obj(obj).dict(exclude={"id"}))
+        obj = to_mongo(cls.new_obj(obj), exclude_id=True)
         res = await cls.collection.insert_one(obj)
         obj["_id"] = res.inserted_id
         return cls.parse_obj(obj)
@@ -124,7 +133,7 @@ class Model(BaseModel, metaclass=ObjectsProperty):
     async def insert_many(cls: Type[T], _list: List[dict]) -> List[T]:
         """Save the given objects to database and return a list of models with their newly created ids."""
         res = await cls.collection.insert_many([
-            to_mongo(cls.new_obj(item).dict(exclude={"id"})) for item in _list
+            to_mongo(cls.new_obj(item), exclude_id=True) for item in _list
         ])
         __list = [cls(id=new_id, **obj) for obj, new_id in zip(_list, res.inserted_id)]
         return __list
@@ -244,7 +253,6 @@ class FileModel(BaseModel, metaclass=ObjectsProperty):
         find = {f"metadata.{key}": value for key, value in to_mongo(find).items()}
         return await mongo_engine.db.get_collection("fs.files").find_one(find)
 
-
     def dict(self, *args, **kwargs):
         kwargs.update({"by_alias": False})
         return super().dict(*args, **kwargs)
@@ -257,7 +265,7 @@ class FileModel(BaseModel, metaclass=ObjectsProperty):
         grid_in = mongo_engine.fs.open_upload_stream_with_id(
             file_id=file_id,
             filename=content.filename,
-            metadata=to_mongo(cls.parse_obj(data).dict())
+            metadata=to_mongo(cls.parse_obj(data))
         )
         with content.file as f:
             await grid_in.write(f.read())
