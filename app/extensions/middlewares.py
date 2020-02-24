@@ -18,7 +18,6 @@ def log_to_file(title):
 async def validation_exception_handler(request: Request, exc: RequestValidationError) -> PlainTextResponse:
     # log_to_file("Invalid request")
     info(f"Tamed exception >> 422 see below...\n{str(exc)}")
-    # info(f"Request: {await request.body()}")
     return PlainTextResponse(str(exc), status_code=422)
 
 

@@ -1,4 +1,5 @@
 from os import getenv
+from typing import AnyStr
 from typing import List, Union, Optional, Type
 from typing import TypeVar
 
@@ -10,7 +11,7 @@ from pydantic import BaseModel, Field
 from pydantic import ValidationError
 from pydantic.main import ModelMetaclass
 
-from .mongo import mongo_engine, AsyncIOMotorCollection
+from .mongo import mongo_engine, AsyncIOMotorCollection, AsyncIOMotorCursor
 
 load_dotenv()
 
@@ -58,7 +59,7 @@ def to_mongo(obj):
         return [to_mongo(item) for item in obj]
     elif isinstance(obj, dict):
         return {("_id" if key == "id" or key == "_id" else key): to_mongo(value) for key, value in obj.items()}
-    elif isinstance(obj, Model):
+    elif isinstance(obj, (Model, FileModel)):
         return to_mongo(obj.dict(by_alias=True, include={"id", "collection_name"}))
     else:
         return obj
@@ -234,45 +235,53 @@ class FileModel(BaseModel, metaclass=ObjectsProperty):
         }
 
     @classmethod
+    async def _find_many(cls: Type[T], find: dict = {}) -> List[dict]:
+        find = {f"metadata.{key}": value for key, value in to_mongo(find).items()}
+        return await mongo_engine.db.get_collection("fs.files").find(find).to_list(length=MAX_FIND)
+
+    @classmethod
+    async def _find_one(cls: Type[T], find: dict = {}) -> Optional[dict]:
+        find = {f"metadata.{key}": value for key, value in to_mongo(find).items()}
+        return await mongo_engine.db.get_collection("fs.files").find_one(find)
+
+
+    def dict(self, *args, **kwargs):
+        kwargs.update({"by_alias": False})
+        return super().dict(*args, **kwargs)
+
+    @classmethod
     async def insert_one(cls: Type[T], content: UploadFile, data: dict) -> T:
-        grid_in, file_id = mongo_engine.fs.open_upload_stream(
-            content.filename,
-            metadata=to_mongo(cls.parse_obj(data))
+        file_id = ObjectId()
+        data["_id"] = file_id
+        data["original_filename"] = content.filename
+        grid_in = mongo_engine.fs.open_upload_stream_with_id(
+            file_id=file_id,
+            filename=content.filename,
+            metadata=to_mongo(cls.parse_obj(data).dict())
         )
         with content.file as f:
             await grid_in.write(f.read())
-            await grid_in.set("_id", file_id)
-            await grid_in.set("original_filename", content.filename)
             await grid_in.close()
-        data["_id"] = file_id
         return cls.parse_obj(data)
 
     @classmethod
     async def find(cls: Type[T], find: dict = {}) -> List[T]:
-        find = to_mongo(find)
-        cursor = mongo_engine.fs.find({"metadata": find}, no_cursor_timeout=True)
-        return [cls.parse_obj(grid_data.metadata) for grid_data in cursor]
+        grid_objs = await cls._find_many(find)
+        return [cls.parse_obj(grid_obj["metadata"]) for grid_obj in grid_objs]
 
     @classmethod
     async def find_one(cls: Type[T], find: dict) -> Optional[T]:
-        find = to_mongo(find)
-        cursor = mongo_engine.fs.find({"metadata": find}, no_cursor_timeout=True)
-        finds = [cls.parse_obj(grid_data.metadata) for grid_data in cursor]
         try:
-            return finds.pop()
-        except IndexError:
+            grid_obj = await cls._find_one(find)
+            return cls.parse_obj(grid_obj["metadata"])
+        except (AttributeError, TypeError, ValidationError):
             return None
 
     @classmethod
     async def find_one_and_set(cls: Type[T], find: dict, data: dict) -> Optional[T]:
-        find = to_mongo(find)
         data = to_mongo(data)
-        cursor = mongo_engine.fs.find({"metadata": find}, no_cursor_timeout=True)
-        finds = [cls.parse_obj(grid_data.metadata) for grid_data in cursor]
-        try:
-            obj = finds.pop()
-        except IndexError:
-            return None
+        grid_obj = await mongo_engine.fs.find_one(find)
+        obj = cls.parse_obj(cls._find_one(find)["metadata"])
         grid_in, _ = mongo_engine.fs.open_upload_stream_with_id(file_id=obj.id, filename=obj.original_filename)
         for key, value in data.items():
             await grid_in.set(key, value)
@@ -283,12 +292,19 @@ class FileModel(BaseModel, metaclass=ObjectsProperty):
 
     @classmethod
     async def delete(cls: Type[T], find: dict) -> None:
-        find = to_mongo(find)
-        cursor = mongo_engine.fs.find({"metadata": find}, no_cursor_timeout=True)
-        finds = [cls.parse_obj(grid_data.metadata) for grid_data in cursor]
-        for obj in finds:
+        grid_objs = await cls._find_many(find)
+        objs = [cls.parse_obj(grid_obj["metadata"]) for grid_obj in grid_objs]
+        for obj in objs:
             await mongo_engine.fs.delete(ObjectId(obj.id))
 
+    @classmethod
+    async def read(cls: Type[T], id: str) -> AnyStr:
+        from tempfile import TemporaryFile
+        with TemporaryFile() as file:
+            await mongo_engine.fs.download_to_stream(ObjectId(id), file)
+            file.seek(0)
+            data = file.read()
+        return data
 
 
 One = Union[T, Model]

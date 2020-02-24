@@ -10,10 +10,14 @@ from schemas import *
 
 router = APIRouter()
 
+from bson import ObjectId
 
 @router.get("/current/")
 async def get_current_user(current_user: User = Depends(get_current_user)):
+    all_groups = await Group.find()
     cu_groups = await Group.find({"members": current_user})
+    # available_groups = await Group.find({"$not": {"members._id": ObjectId(current_user.id)}})
+    available_groups = await Group.find({"members._id": {"$not": {"$eq": ObjectId(current_user.id)}}})
     nodes_ids = [node.id for group in cu_groups for node in group.nodes]
     cu_nodes = await Node.find({"id": {"$in": nodes_ids}})
     for node in cu_nodes:
@@ -21,6 +25,7 @@ async def get_current_user(current_user: User = Depends(get_current_user)):
     result = current_user.export()
     result["groups"] = [group.export() for group in cu_groups]
     result["nodes"] = [node.export() for node in cu_nodes]
+    result["available_groups"] = available_groups
     return result
 
 

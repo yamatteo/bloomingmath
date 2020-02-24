@@ -93,47 +93,49 @@ async def setup():
 
 async def populate():
     from models import User, Content, Node, Group
+    from fastapi import UploadFile
     warning(f"Setting a fresh development database.")
     await me.db.drop_collection("users")
     await me.db.drop_collection("groups")
     await me.db.drop_collection("nodes")
-    await me.db.drop_collection("contents")
-    user_id = (await me.collection("users").insert_one({
+    await me.db.drop_collection("fs.files")
+    await me.db.drop_collection("fs.chunks")
+
+    user = await User.insert_one({
         "email": "user@example.com",
         "password_hash": get_password_hash("pass"),
-    })).inserted_id
-    admin_id = (await me.collection("users").insert_one({
+    })
+    admin = await User.insert_one({
         "email": "admin@example.com",
         "password_hash": get_password_hash("pass"),
         "is_admin": True,
-    })).inserted_id
+    })
 
-    node_id = (await me.collection("nodes").insert_one({
+    with open("tests/example.pdf", "rb") as f:
+        uf = UploadFile(filename="example.pdf", file=f, content_type="application/pdf")
+        content = await Content.insert_one(content=uf, data={
+            "short": "An example pdf.",
+            "long": "This is an optional description that can be added to any file to help users.",
+            "filetype": "pdf"
+        })
+
+    node = await Node.insert_one({
         "short": "Argument 10",
         "long": "# Description of argument 10 \n\nLorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-        "contents": []
-    })).inserted_id
+        "contents": [content]
+    })
 
-    await me.collection("groups").insert_one({
+    group = await Group.insert_one({
         "short": "First",
         "long": "Description of the first group",
-        "members": [{
-            "_id": user_id,
-            "collection_name": "users"
-        }, {
-            "_id": admin_id,
-            "collection_name": "users"
-        }],
-        "nodes": [{
-            "_id": node_id,
-            "collection_name": "nodes"
-        }]
+        "members": [user, admin],
+        "nodes": [node]
     })
 
     user_token = create_access_token(
-        data={"sub": str(user_id)}
+        data={"sub": str(user.id)}
     )
     admin_token = create_access_token(
-        data={"sub": str(admin_id)}
+        data={"sub": str(admin.id)}
     )
     return admin_token, user_token

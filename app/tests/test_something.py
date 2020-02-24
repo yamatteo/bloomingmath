@@ -23,7 +23,7 @@ async def ntest_admin_create_group(setup):
 
 
 @mark.asyncio
-async def ntest_users_rest(setup):
+async def test_users_rest(setup):
     me, app, client, admin_log, user_log, logout = setup
 
     admin_log()
@@ -46,15 +46,16 @@ async def ntest_users_rest(setup):
         {"find": {"email": "other@example.com"}, "data": {"password": "0000", "is_blocked": False}}))
     data = loads(res.text)
     u = User.parse_obj(data)
-    assert u.is_blocked == False
+    assert u.is_blocked is False
     res = client.post("/users/login", data=dumps({"email": "other@example.com", "password": "pass"}))
     assert res.status_code == 401
     res = client.post("/users/login", data=dumps({"email": "other@example.com", "password": "0000"}))
     data = loads(res.text)
     assert "access_token" in data.keys()
-    client.post("/users/delete", data=dumps({"email": "user@example.com"}))
+    client.post("/users/delete", data=dumps({"email": "other@example.com"}))
 
     assert len(await User.find()) == 2
+
 
 @mark.asyncio
 async def test_user_routine(setup):
@@ -70,4 +71,32 @@ async def test_user_routine(setup):
 
     user_log()
     res = client.get("/users/current")
-    print(res.text)
+    data = loads(res.text)
+    assert "nodes" in data.keys()
+    print(data)
+
+
+@mark.asyncio
+async def test_contents_rest(setup):
+    me, app, client, admin_log, user_log, logout = setup
+
+    admin_log()
+    res = client.post("/contents/browse")
+    data = loads(res.text)
+    assert isinstance(data, list)
+    assert len(data) == 1
+
+    with open("tests/example.pdf", "rb") as f:
+        data = {"short": "An other example of pdf.", "filetype": "pdf",
+                "long": "This is an optional description that can be added to any file to help users."}
+        res = client.post("/contents/add", files={"content": f}, data=data)
+        data = loads(res.text)
+        assert data["id"] != "000000000000000000000000"
+        assert data["original_filename"] == "example.pdf"
+
+    res = client.post("/contents/read", data=dumps({"filetype": "pdf", "short": "An other example of pdf."}))
+    data = loads(res.text)
+    assert data["long"] == "This is an optional description that can be added to any file to help users."
+
+    res = client.post("/contents/read", data=dumps({"filetype": "mp3"}))
+    assert loads(res.text) is None

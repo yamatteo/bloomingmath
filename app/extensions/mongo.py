@@ -4,6 +4,7 @@ from typing import Optional
 from fastapi import FastAPI
 from motor.motor_asyncio import AsyncIOMotorClient
 from motor.motor_asyncio import AsyncIOMotorCollection
+from motor.motor_asyncio import AsyncIOMotorCursor
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from motor.motor_asyncio import AsyncIOMotorGridFSBucket
 
@@ -99,4 +100,5 @@ class AsyncIOMotorEngine:
 
 mongo_engine = AsyncIOMotorEngine()
 
-__all__ = ("mongo_engine", "NotInitializedError", "AlreadyInitializedError")
+__all__ = ("mongo_engine", "NotInitializedError", "AlreadyInitializedError", "AsyncIOMotorEngine", "AsyncIOMotorClient",
+           "AsyncIOMotorCollection", "AsyncIOMotorDatabase", "AsyncIOMotorGridFSBucket", "AsyncIOMotorCursor")
