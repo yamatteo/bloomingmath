@@ -9,7 +9,26 @@ module.exports = {
     watchOptions: {
       poll: true,
     },
-    proxy: 'http://localhost:8000',
+    // proxy: 'http://localhost:8000',
+    proxy: {
+      "/contents": {
+        target: "http://localhost:8000",
+        changeOrigin: true,
+        timeout: 5000
+      },
+      "/users": {
+        target: "http://localhost:8000",
+        changeOrigin: true
+      },
+      "/groups": {
+        target: "http://localhost:8000",
+        changeOrigin: true
+      },
+      "/nodes": {
+        target: "http://localhost:8000",
+        changeOrigin: true
+      }
+    }
   },
 
   // CUSTOM

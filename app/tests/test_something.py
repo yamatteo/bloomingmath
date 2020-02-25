@@ -74,7 +74,7 @@ async def test_user_routine(setup):
     data = loads(res.text)
     assert "nodes" in data.keys()
     res = client.get(f"/contents/{data['nodes'][0]['contents'][0]['id']}")
-    print(res.text)
+    assert len(res.text) > 300
 
 @mark.asyncio
 async def test_contents_rest(setup):

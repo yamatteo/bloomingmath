@@ -85,7 +85,7 @@ async def setup():
     for handler in app.router.lifespan.shutdown_handlers:
         await handler()
 
-    await me.client.drop_database(me.db)
+    # await me.client.drop_database(me.db)
 
     # If the process is forken in the setpu it should terminate in the teardown.
     # process.terminate()

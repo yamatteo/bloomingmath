@@ -12,6 +12,7 @@ from pydantic import ValidationError
 from pydantic.main import ModelMetaclass
 
 from .mongo import mongo_engine, AsyncIOMotorCollection
+from typing import ByteString
 
 load_dotenv()
 
@@ -306,7 +307,7 @@ class FileModel(BaseModel, metaclass=ObjectsProperty):
             await mongo_engine.fs.delete(ObjectId(obj.id))
 
     @classmethod
-    async def read(cls: Type[T], id: str) -> AnyStr:
+    async def read(cls: Type[T], id: str) -> bytes:
         from tempfile import TemporaryFile
         with TemporaryFile() as file:
             await mongo_engine.fs.download_to_stream(ObjectId(id), file)
