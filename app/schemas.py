@@ -52,6 +52,7 @@ class UserEdit(BaseModel):
     is_blocked: Optional[bool]
 
 class ContentFind(BaseModel):
+    id: Optional[str]
     short: Optional[str]
     filetype: Optional[str]
     original_filename: Optional[str]

@@ -98,6 +98,7 @@ async def populate():
     await me.db.drop_collection("users")
     await me.db.drop_collection("groups")
     await me.db.drop_collection("nodes")
+    await me.db.drop_collection("contents")
     await me.db.drop_collection("fs.files")
     await me.db.drop_collection("fs.chunks")
 
@@ -113,11 +114,12 @@ async def populate():
 
     with open("tests/example.pdf", "rb") as f:
         uf = UploadFile(filename="example.pdf", file=f, content_type="application/pdf")
-        content = await Content.insert_one(content=uf, data={
+        content = await Content.insert_one({
             "short": "An example pdf.",
             "long": "This is an optional description that can be added to any file to help users.",
             "filetype": "pdf"
         })
+        content = await content.upload(uf)
 
     node = await Node.insert_one({
         "short": "Argument 10",

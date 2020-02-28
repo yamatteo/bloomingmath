@@ -73,7 +73,7 @@ async def test_user_routine(setup):
     res = client.get("/users/current")
     data = loads(res.text)
     assert "nodes" in data.keys()
-    res = client.get(f"/contents/{data['nodes'][0]['contents'][0]['id']}")
+    res = client.get(f"/contents/download/{data['nodes'][0]['contents'][0]['id']}")
     assert len(res.text) > 300
 
 @mark.asyncio
@@ -89,9 +89,11 @@ async def test_contents_rest(setup):
     with open("tests/example.pdf", "rb") as f:
         data = {"short": "An other example of pdf.", "filetype": "pdf",
                 "long": "This is an optional description that can be added to any file to help users."}
-        res = client.post("/contents/add", files={"content": f}, data=data)
+        res = client.post("/contents/add", data=dumps(data))
         data = loads(res.text)
         assert data["id"] != "000000000000000000000000"
+        res = client.post(f"/contents/upload/{data['id']}", files={"data": f})
+        data = loads(res.text)
         assert data["original_filename"] == "example.pdf"
 
     res = client.post("/contents/read", data=dumps({"filetype": "pdf", "short": "An other example of pdf."}))

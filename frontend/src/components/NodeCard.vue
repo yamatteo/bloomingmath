@@ -42,7 +42,8 @@ export default {
     },
     active_content_setter(content) {
       console.log("set active content", content)
-      this.active_content = content
+      if (content != null) this.active_content = {...content}
+      else this.active_content = null
     }
   }
 };

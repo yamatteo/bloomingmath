@@ -1,15 +1,9 @@
-from fastapi import UploadFile, Form, File
+from typing import List
 
-import tempfile
-from typing import List, Optional
-
-from bson import ObjectId
 from fastapi import APIRouter, Depends
-from fastapi import UploadFile, Form, File
-from starlette.requests import Request
+from fastapi import UploadFile, File
 from starlette.responses import Response
 
-from extensions.mongo import mongo_engine
 from models import Content
 from routers import admin_only
 from schemas import *
@@ -28,13 +22,8 @@ async def read_content(find: ContentFind) -> Optional[Content]:
 
 
 @router.api_route("/add", methods=["POST"])
-async def add_content(short: str = Form(...), long: Optional[str] = Form(None), filetype: str = Form(...),
-                      content: UploadFile = File(...)) -> Content:
-    if long is None:
-        data = ContentAdd(short=short, filetype=filetype)
-    else:
-        data = ContentAdd(short=short, long=long, filetype=filetype)
-    return await Content.insert_one(content=content, data=data.dict(exclude_unset=True))
+async def add_content(data: ContentAdd) -> Content:
+    return await Content.insert_one(data.dict(exclude_unset=True))
 
 
 @router.api_route("/edit", methods=["POST"], dependencies=[Depends(admin_only)])
@@ -44,15 +33,20 @@ async def edit_content(find: ContentFind, data: ContentEdit) -> Optional[Content
 
 @router.api_route("/delete", methods=["POST"], dependencies=[Depends(admin_only)])
 async def delete_content(find: ContentFind) -> None:
-    await Content.delete(find=find.dict(exclude_unset=True))
+    await Content.delete_one(find=find.dict(exclude_unset=True))
 
 
-@router.get("/{content_id}")
-async def read_content(content_id: str):
+@router.post("/upload/{content_id}", dependencies=[Depends(admin_only)])
+async def upload_content(content_id: str, data: UploadFile = File(...)) -> Content:
+    content = await Content.find_one(find={"id": content_id})
+    return await content.upload(data=data)
+
+
+@router.get("/download/{content_id}")
+async def download_content(content_id: str):
     content = await Content.find_one({"id": content_id})
-    data: bytes = await Content.read(content_id)
+    data: bytes = await content.download()
     return Response(content=data, media_type=f"application/{content.filetype}", headers={
         "Connection": "keep-alive",
         "Content-Disposition": "attachment"
     })
-

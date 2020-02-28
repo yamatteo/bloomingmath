@@ -1,7 +1,7 @@
 <template>
   <a
     class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
-    :href="'/contents/' + content.id"
+    :href="'/contents/download/' + content.id"
   >
     {{ content.short }}
     <span v-if="is_admin">
