@@ -8,21 +8,21 @@
       <!-- <b-navbar-nav>
         <b-nav-item href="#">Link</b-nav-item>
         <b-nav-item href="#" disabled>Disabled</b-nav-item>
-      </b-navbar-nav> -->
+      </b-navbar-nav>-->
 
       <!-- Right aligned nav items -->
       <b-navbar-nav class="ml-auto">
         <!-- <b-nav-form>
           <b-form-input size="sm" class="mr-sm-2" placeholder="Search"></b-form-input>
           <b-button size="sm" class="my-2 my-sm-0" type="submit">Search</b-button>
-        </b-nav-form> -->
+        </b-nav-form>-->
 
         <!-- <b-nav-item-dropdown text="Lang" right>
           <b-dropdown-item href="#">EN</b-dropdown-item>
           <b-dropdown-item href="#">ES</b-dropdown-item>
           <b-dropdown-item href="#">RU</b-dropdown-item>
           <b-dropdown-item href="#">FA</b-dropdown-item>
-        </b-nav-item-dropdown> -->
+        </b-nav-item-dropdown>-->
 
         <!-- <b-nav-item-dropdown right>
           <template v-slot:button-content>
@@ -30,9 +30,16 @@
           </template>
           <b-dropdown-item href="#">Profile</b-dropdown-item>
           <b-dropdown-item href="#">Sign Out</b-dropdown-item>
-        </b-nav-item-dropdown> -->
-        <b-button pill class="px-2 m-1" @click="goto_profile"><b-icon-person-fill font-scale="1.5"/></b-button>
-        <b-button pill class="px-2 m-1" @click="logout"><b-icon-box-arrow-right font-scale="1.5"/></b-button>
+        </b-nav-item-dropdown>-->
+        <b-button v-if="is_admin" pill class="px-2 m-1" @click="goto_admin">
+          <b-icon-tools font-scale="1.5" />
+        </b-button>
+        <b-button pill class="px-2 m-1" @click="goto_profile">
+          <b-icon-person-fill font-scale="1.5" />
+        </b-button>
+        <b-button pill class="px-2 m-1" @click="logout">
+          <b-icon-box-arrow-right font-scale="1.5" />
+        </b-button>
       </b-navbar-nav>
     </b-collapse>
   </b-navbar>
@@ -40,21 +47,32 @@
 
 <script>
 export default {
+  computed: {
+    is_admin() {
+      try {
+        return this.$store.state.current_user.is_admin;
+      } catch {
+        return false;
+      }
+    }
+  },
   methods: {
-    logout () {
+    logout() {
       this.$session.destroy();
       this.$store.dispatch("login_actualization", null);
     },
-    goto_profile () {
-      this.$store.commit("see_page", 'profile')
+    goto_profile() {
+      this.$store.commit("see_page", "profile");
+    },
+    goto_admin() {
+      this.$store.commit("see_page", "admin");
     },
     goto_null() {
-      this.$store.commit("see_page", null)
+      this.$store.commit("see_page", null);
     }
   }
-}
+};
 </script>
 
 <style scoped>
-
 </style>

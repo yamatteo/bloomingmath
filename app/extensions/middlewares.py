@@ -1,11 +1,13 @@
+from datetime import datetime
+from logging import info, error
+from traceback import format_exc
+
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError, HTTPException
 from starlette.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from starlette.responses import PlainTextResponse
-from datetime import datetime
-from traceback import format_exc
-from logging import info, error
+
 
 def log_to_file(title):
     with open("server_error.log", "a") as f:
@@ -14,6 +16,7 @@ def log_to_file(title):
         for line in format_exc().splitlines():
             f.write(line + "\n")
         f.write("#" * 40 + "\n")
+
 
 async def validation_exception_handler(request: Request, exc: RequestValidationError) -> PlainTextResponse:
     # log_to_file("Invalid request")
@@ -38,10 +41,16 @@ class MiddlewareEngine:
     def init_app(app: FastAPI):
         app.add_middleware(
             CORSMiddleware,
-            allow_origins=["*"],
+            allow_origins=[
+                "http://127.0.0.1:8080", "https://127.0.0.1:8080",
+                "http://127.0.0.1:8000", "https://127.0.0.1:8000",
+                "http://bloomingmath.herokuapp.com", "http://bloomingmath.herokuapp.com"
+            ],
             allow_credentials=True,
-            allow_methods=["*"],
-            allow_headers=["*"],
+            allow_methods=["GET", "POST"],
+            allow_headers=["Accept", "Accept-Language", "Content-Language", "Content-Type", "Authorization",
+                           "Accept-Encoding", "Cache-Control", "Connection", "Content-Length", "Cookie", "Host",
+                           "Origin", "Pragma", "Referer", "Sec-Fetch-Mode", "Sec-Fetch-Site", "User-Agent"],
         )
         app.add_exception_handler(RequestValidationError, validation_exception_handler)
         app.add_exception_handler(HTTPException, http_exception_handler)
@@ -49,7 +58,6 @@ class MiddlewareEngine:
 
 
 middleware_engine = MiddlewareEngine()
-
 
 # @app.middleware("http")
 # async def custom_middleware(request: Request, call_next):

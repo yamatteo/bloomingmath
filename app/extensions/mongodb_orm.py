@@ -123,12 +123,12 @@ class Model(BaseModel, metaclass=ObjectsProperty):
         return _export_(self)
 
     @classmethod
-    async def insert_one(cls: Type[T], obj: dict) -> T:
+    async def insert_one(cls: Type[T], data: dict) -> T:
         """Save the given object to database and return a model with the newly created id."""
-        obj = to_mongo(cls.new_obj(obj), exclude_id=True)
-        res = await cls.collection.insert_one(obj)
-        obj["_id"] = res.inserted_id
-        return cls.parse_obj(obj)
+        data = to_mongo(cls.new_obj(data), exclude_id=True)
+        res = await cls.collection.insert_one(data)
+        data["_id"] = res.inserted_id
+        return cls.parse_obj(data)
 
     @classmethod
     async def insert_many(cls: Type[T], _list: List[dict]) -> List[T]:

@@ -8,7 +8,7 @@
       okTitle="Login"
       @hide.prevent
     >
-      <template v-slot:modal-header="">
+      <template v-slot:modal-header>
         <h5 class="modal-title">Benvenut@ Eternauta</h5>
       </template>
       <b-alert
@@ -23,23 +23,23 @@
 
       <p>
         Per favore, inserisci i tuoi dati. Se non hai un profilo, vai alla pagina di
-        <a href="#" @click.prevent="goto_signup">registrazione</a>.
-      </p>
-
-      <p>
-        <!-- TODO: only for development -->
         <a
           href="#"
-          class="my-1"
-          @click="() => { email = 'user@example.com'; password = 'pass' ; attempt_login() ;}"
-        >user@example.com login</a>
+          @click.prevent="goto_signup"
+        >registrazione</a>.
       </p>
 
       <b-input-group size="lg">
         <b-input-group-prepend is-text>
           <b-icon-envelope />
         </b-input-group-prepend>
-        <b-form-input v-model="email" placeholder="Email address" autofocus></b-form-input>
+        <b-form-input
+          v-model="email"
+          placeholder="Email address"
+          autofocus
+          @keyup.ctrl.insert="() => { email = 'user@example.com'; password = 'pass' ; attempt_login() ;}"
+          @keyup.ctrl.alt.insert="() => { email = 'admin@example.com'; password = 'pass' ; attempt_login() ;}"
+        ></b-form-input>
       </b-input-group>
 
       <b-input-group size="lg">
@@ -87,9 +87,11 @@ export default {
         .then(result => {
           console.log("Backend >> ", result.data);
           this.$session.set("authtoken", result.data.access_token);
-          this.$store.dispatch("login_actualization", result.data.access_token).then(() => {
-            this.$store.commit("see_modal", null);
-          });
+          this.$store
+            .dispatch("login_actualization", result.data.access_token)
+            .then(() => {
+              this.$store.commit("see_modal", null);
+            });
         })
         .catch(err => {
           console.log("Error >> ", err);

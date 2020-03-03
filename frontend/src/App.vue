@@ -4,6 +4,8 @@
     <SignupModal v-if="!authorized && see_signup_modal" />
     <Landing v-if="authorized && (see_page=='landing' | see_page == null)" />
     <Profile v-if="authorized && see_page=='profile'" />
+    <AdminDashboard v-if="authorized && see_page=='admin'" />
+    <ModalPlane />
   </div>
 </template>
 
@@ -12,8 +14,10 @@ export default {
   components: {
     Landing: () => import("@/components/Landing.vue"),
     Profile: () => import("@/components/Profile.vue"),
+    AdminDashboard: () => import("@/components/AdminDashboard"),
     LoginModal: () => import("@/components/LoginModal.vue"),
-    SignupModal: () => import("@/components/SignupModal.vue")
+    SignupModal: () => import("@/components/SignupModal.vue"),
+    ModalPlane: () => import("@/components/ModalPlane")
   },
   props: {},
   data: () => ({}),

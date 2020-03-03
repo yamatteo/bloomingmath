@@ -11,7 +11,7 @@ from schemas import *
 router = APIRouter()
 
 
-@router.get("/current/")
+@router.api_route("/current", methods=["GET", "OPTIONS", "POST"])
 async def get_current_user(current_user: User = Depends(get_current_user)):
     all_groups = await Group.find()
     cu_groups = await Group.find({"members._id": current_user.id})

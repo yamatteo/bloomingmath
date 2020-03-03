@@ -1,6 +1,7 @@
-from typing import Optional
+from typing import Optional, List
 
 from pydantic import BaseModel, EmailStr, validator, root_validator
+from models import User, Content, Node, Group
 
 
 class UserSignup(BaseModel):
@@ -66,3 +67,33 @@ class ContentEdit(BaseModel):
     short: Optional[str]
     long: Optional[str]
     filetype: Optional[str]
+
+
+class GroupFind(BaseModel):
+    id: Optional[str]
+    short: Optional[str]
+    long: Optional[str]
+
+class GroupAdd(BaseModel):
+    short: str
+    long: Optional[str]
+
+class GroupEdit(BaseModel):
+    short: Optional[str]
+    long: Optional[str]
+    nodes: Optional[List[Node]]
+
+
+class NodeFind(BaseModel):
+    id: Optional[str]
+    short: Optional[str]
+    long: Optional[str]
+
+class NodeAdd(BaseModel):
+    short: str
+    long: Optional[str]
+
+class NodeEdit(BaseModel):
+    short: Optional[str]
+    long: Optional[str]
+    contents: Optional[List[Content]]

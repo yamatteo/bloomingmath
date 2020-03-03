@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Body
 from fastapi import UploadFile, File
 from starlette.responses import Response
 
@@ -16,12 +16,15 @@ async def browse_contents() -> List[Content]:
     return await Content.find()
 
 
-@router.api_route("/read", methods=["POST"], dependencies=[Depends(admin_only)])
-async def read_content(find: ContentFind) -> Optional[Content]:
-    return await Content.find_one(find=find.dict(exclude_unset=True))
+@router.post("/read", dependencies=[Depends(admin_only)])
+async def read_content(find: ContentFind, with_nodes: bool = Body(False), with_other_nodes: bool = Body(False)) -> Optional[Content]:
+    print("want", find)
+    content = await Content.find_one(find=find.dict(exclude_unset=True))
+    print("read content", content)
+    return content
 
 
-@router.api_route("/add", methods=["POST"])
+@router.api_route("/add", methods=["POST"], dependencies=[Depends(admin_only)])
 async def add_content(data: ContentAdd) -> Content:
     return await Content.insert_one(data.dict(exclude_unset=True))
 

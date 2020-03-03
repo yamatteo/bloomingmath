@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Body
 
 from models import User, Content, Node, Group
 from routers import get_current_user, admin_only
+from schemas import NodeAdd, NodeEdit, NodeFind
 
 #
 router = APIRouter()
@@ -38,35 +39,32 @@ async def current_nodes(current_user: User = Depends(get_current_user)):
     return [node.export() for node in await Node.find({"id": {"$in": nodes_ids}})]
 
 
-@router.get("/browse")
+@router.post("/browse", dependencies=[Depends(admin_only)])
 async def browse_nodes():
-    return [node.export() for node in await Node.find({})]
+    return await Node.find()
 
 
-@router.get("/read")
-async def read_node(node_id: str):
-    return await Node.find_one({"id": node_id})
+@router.post("/read", dependencies=[Depends(admin_only)])
+async def read_node(find: NodeFind, with_contents: bool = Body(False), with_other_contents: bool = Body(False)):
+    node = await Node.find_one(find=find.dict(exclude_unset=True))
+    node_export = node.dict()
+    if with_contents:
+        node_export["contents"] = await Content.find({"id": {"$in": [ content.id for content in node.contents ]}})
+    if with_other_contents:
+        node_export["other_contents"] = await Content.find({"id": {"$nin": [ content.id for content in node.contents ]}})
+    return node_export
 
 
-@router.post("/add")
-async def add_node(short: str, long: Optional[str] = "", admin: User = Depends(admin_only)):
-    assert admin is not None
-    return await Node.insert_one({"short": short, "long": long})
+@router.post("/edit", dependencies=[Depends(admin_only)])
+async def edit_node(find: NodeFind, data: NodeEdit):
+    return await Node.find_one_and_set(find=find.dict(exclude_unset=True), data=data.dict(exclude_unset=True))
 
 
-@router.post("/edit")
-async def edit_node(node_id: str, short: Optional[str] = None, long: Optional[str] = None,
-                    admin: User = Depends(admin_only)):
-    assert admin is not None
-    data = {}
-    if short is not None:
-        data["short"] = short
-    if long is not None:
-        data["long"] = long
-    return await Node.find_one_and_set(find={"id": node_id}, data=data)
+@router.post("/add", dependencies=[Depends(admin_only)])
+async def add_node(data: NodeAdd):
+    return await Node.insert_one(data=data.dict(exclude_unset=True))
 
 
-@router.post("/delete")
-async def delete_node(node_id: str, admin: User = Depends(admin_only)):
-    assert admin is not None
-    return await Node.delete_one({"id": node_id})
+@router.post("/delete", dependencies=[Depends(admin_only)])
+async def delete_node(find: NodeFind):
+    return await Node.delete_one(find=find.dict(exclude_unset=True))
