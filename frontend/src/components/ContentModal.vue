@@ -21,6 +21,18 @@
       <b-form-input v-model="content.filetype" placeholder="Estensione"></b-form-input>
     </b-input-group>
 
+    <div class="form-group mb-2">
+      <label for="edit_content_modal_long">Long</label>
+      <b-form-textarea
+        v-model="content.long"
+        placeholder="Descrizione del contenuto..."
+        rows="3"
+        max-rows="6"
+        class="form-control"
+        id="edit_content_modal_long"
+      ></b-form-textarea>
+    </div>
+
     <b-form-file
       v-model="file_to_upload"
       :state="Boolean(file_to_upload)"

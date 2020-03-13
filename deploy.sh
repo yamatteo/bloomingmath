@@ -10,6 +10,12 @@ cp public/index.development.html public/index.html
 
 cd ..
 
+cd frontend_stag
+
+npm run build
+
+cd ..
+
 heroku container:login
 
 heroku container:push web --app bloomingmath

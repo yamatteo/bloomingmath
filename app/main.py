@@ -20,11 +20,17 @@ app = FastAPI(title="Bloomingmath")
 app.mount("/static", StaticFiles(directory="../dist"), name="static")
 mongo_engine.init_app(app, uri=MONGODB_URI, env=FASTAPI_ENVIRONMENT)
 middleware_engine.init_app(app)
+app.mount("/stag/static", StaticFiles(directory="../stag"), name="stag_static")
 
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root():
     with open("../dist/index.html", "r") as f:
+        return f.read()
+
+@app.get("/stag", response_class=HTMLResponse)
+async def read_stag():
+    with open("../stag/index.html", "r") as f:
         return f.read()
 
 

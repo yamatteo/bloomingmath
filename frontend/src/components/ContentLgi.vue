@@ -4,6 +4,8 @@
     :href="'/contents/download/' + content.id"
   >
     {{ content.short }}
+    <br v-if="content.long" />
+    {{ content.long }}
     <span v-if="is_admin">
       <span class="badge badge-secondary badge-pill" @click.stop.prevent="active_content_setter(content)"><b-icon-pencil font-scale="2"/></span>
     </span>
