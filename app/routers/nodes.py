@@ -2,7 +2,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, Body
 
-from models import User, Content, Node, Group
+from models import User, Content, Node, Group, ExternalContent
 from routers import get_current_user, admin_only
 from schemas import NodeAdd, NodeEdit, NodeFind
 
@@ -27,7 +27,29 @@ async def pull_content(node_id: str = Body(..., embed=True), content_id: str = B
     assert admin is not None
     node = await Node.find_one_and_pull(
         find={"id": node_id},
-        data={"contents": Node.ref(content_id)}
+        data={"contents": Content.ref(content_id)}
+    )
+    return node.export()
+
+
+@router.post("/push_external_content")
+async def push_external_content(node_id: str = Body(..., embed=True), external_content_id: str = Body(..., embed=True),
+                       admin: User = Depends(admin_only)):
+    assert admin is not None
+    node = await Node.find_one_and_add_to_set(
+        find={"id": node_id},
+        data={"external_contents": ExternalContent.ref(external_content_id)}
+    )
+    return node.export()
+
+
+@router.post("/pull_external_content")
+async def pull_external_content(node_id: str = Body(..., embed=True), external_content_id: str = Body(..., embed=True),
+                    admin: User = Depends(admin_only)):
+    assert admin is not None
+    node = await Node.find_one_and_pull(
+        find={"id": node_id},
+        data={"external_contents": ExternalContent.ref(external_content_id)}
     )
     return node.export()
 

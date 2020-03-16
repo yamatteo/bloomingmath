@@ -28,12 +28,19 @@ class Content(ModelWithContentFile):
     filetype: str
 
 
+class ExternalContent(Model):
+    collection_name = "external_content"
+    short: str
+    long: Optional[str] = ""
+    url: str
+
+
 class Node(Model):
     collection_name: str = "nodes"
     short: str
     long: Optional[str] = ""
     contents: Many[Content] = []
-
+    external_contents: Many[ExternalContent] = []
 
 class Group(Model):
     collection_name = "groups"

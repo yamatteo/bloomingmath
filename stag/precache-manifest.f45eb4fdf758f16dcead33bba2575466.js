@@ -1,6 +1,6 @@
 self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
-    "revision": "efd17cf799b99d53aec9",
+    "revision": "addba21a41da81f343c5",
     "url": "/stag/static/css/app.f5bb7b46.css"
   },
   {
@@ -16,16 +16,16 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/stag/static/css/chunk-7aba536c.81101b01.css"
   },
   {
-    "revision": "bc065cad8f1f4412e055",
+    "revision": "bf4a44b4062d28d47c5a",
     "url": "/stag/static/css/chunk-vendors.a7563475.css"
   },
   {
-    "revision": "42e169c3bc6a2e37947b1d1d9ca3bfd6",
+    "revision": "356f602363e45447457002f6e5bd8906",
     "url": "/stag/static/index.html"
   },
   {
-    "revision": "efd17cf799b99d53aec9",
-    "url": "/stag/static/js/app.75dac809.js"
+    "revision": "addba21a41da81f343c5",
+    "url": "/stag/static/js/app.5248bb1e.js"
   },
   {
     "revision": "2df684c342818d8bde71",
@@ -40,8 +40,8 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/stag/static/js/chunk-2d0b9b85.c52f5f74.js"
   },
   {
-    "revision": "5dba1768eb359f309878",
-    "url": "/stag/static/js/chunk-2d0d350d.87f3b99b.js"
+    "revision": "d4ac4576a30c3d2fc1f6",
+    "url": "/stag/static/js/chunk-2d0d350d.b2b32567.js"
   },
   {
     "revision": "f2519078829a14a0c120",
@@ -64,8 +64,8 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/stag/static/js/chunk-2d21e05f.cb1fe46c.js"
   },
   {
-    "revision": "b3f55d3ade6d40135a66",
-    "url": "/stag/static/js/chunk-2d21f2fb.cf54eefa.js"
+    "revision": "5c087c4cf35200bd815e",
+    "url": "/stag/static/js/chunk-2d21f2fb.28156779.js"
   },
   {
     "revision": "47d968d88a227b8d93e9",
@@ -84,8 +84,8 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/stag/static/js/chunk-de6431ae.4cef9f68.js"
   },
   {
-    "revision": "bc065cad8f1f4412e055",
-    "url": "/stag/static/js/chunk-vendors.3fdec293.js"
+    "revision": "bf4a44b4062d28d47c5a",
+    "url": "/stag/static/js/chunk-vendors.16f10a58.js"
   },
   {
     "revision": "a9a748ebbee0891974657aa52485da4f",

@@ -1,18 +1,19 @@
-from typing import List
+from typing import List, Optional
 
-from fastapi import APIRouter, Form, Depends, HTTPException
+from fastapi import APIRouter, Form, Depends, HTTPException, Body
 from pydantic import ValidationError
 
 from extensions.security import get_password_hash, create_access_token
-from models import User, Content, Group, Node
+from models import User, Content, Group, Node, ExternalContent
 from routers import get_current_user, admin_only
-from schemas import *
+from schemas import UserLogin, UserFindOne, UserSignup, UserEdit, UserAdd, UserPasswordReset, UserForgotPassword
+from extensions.emails import send_password_reset_email
 
 router = APIRouter()
 
 
 @router.api_route("/current", methods=["GET", "OPTIONS", "POST"])
-async def get_current_user(current_user: User = Depends(get_current_user)):
+async def current_user_route(current_user: User = Depends(get_current_user)):
     all_groups = await Group.find()
     cu_groups = await Group.find({"members._id": current_user.id})
     # available_groups = await Group.find({"$not": {"members._id": ObjectId(current_user.id)}})
@@ -21,6 +22,7 @@ async def get_current_user(current_user: User = Depends(get_current_user)):
     cu_nodes = await Node.find({"id": {"$in": nodes_ids}})
     for node in cu_nodes:
         node.contents = await Content.find({"id": {"$in": [content.id for content in node.contents]}})
+        node.external_contents = await ExternalContent.find({"id": {"$in": [external_content.id for external_content in node.external_contents]}})
     result = current_user.export()
     result["groups"] = [group.export() for group in cu_groups]
     result["nodes"] = [node.export() for node in cu_nodes]
@@ -80,6 +82,41 @@ async def signup(user_signup: UserSignup):
         return {"access_token": access_token, "token_type": "bearer"}
     except (ValidationError, KeyError, AttributeError, AssertionError):
         raise HTTPException(status_code=400, detail="Invalid data (maybe a duplicate?)")
+
+@router.post("/password_reset_request")
+async def password_reset_request(data: UserForgotPassword):
+    from os import getenv
+    from dotenv import load_dotenv
+    import hashlib
+
+    current_user = await User.find_one(find={"email": data.email})
+    load_dotenv()
+    secret = getenv("SECRET_KEY", "super-secret") + current_user.email + current_user.password_hash
+    token = hashlib.sha1(secret.encode("utf-8")).hexdigest().upper()[:8]
+    send_password_reset_email(token=token, to_email=current_user.email)
+    return "Email sent."
+
+@router.post("/password_reset")
+async def password_reset(password_reset_form: UserPasswordReset):
+    from os import getenv
+    from dotenv import load_dotenv
+    import hashlib
+
+    load_dotenv()
+    current_user = await User.find_one({"email": password_reset_form.email})
+    secret = getenv("SECRET_KEY", "super-secret") + current_user.email + current_user.password_hash
+    token = hashlib.sha1(secret.encode("utf-8")).hexdigest().upper()[:8]
+    print(password_reset_form, token)
+    if token == password_reset_form.token:
+        find = {"id": current_user.id}
+        data = {"password_hash": get_password_hash(password_reset_form.password)}
+        return await User.find_one_and_set(find=find, data=data)
+    else:
+        raise HTTPException(
+            status_code=401,
+            detail="Incorrect token.",
+        )
+
 
 
 @router.api_route("/browse", methods=["GET", "POST"], dependencies=[Depends(admin_only)])

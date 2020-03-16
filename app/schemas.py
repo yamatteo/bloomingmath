@@ -1,7 +1,7 @@
 from typing import Optional, List
 
 from pydantic import BaseModel, EmailStr, validator, root_validator
-from models import User, Content, Node, Group
+from models import User, Content, Node, Group, ExternalContent
 
 
 class UserSignup(BaseModel):
@@ -22,6 +22,27 @@ class UserSignup(BaseModel):
             raise ValueError(f"Passwords do not match ({pw1} vs. {pw2}).")
         return values
 
+class UserPasswordReset(BaseModel):
+    email: EmailStr
+    token: str
+    password: str
+    password_confirmation: str
+
+    @validator("password")
+    def password_is_not_empty(cls, value):
+        if len(value) == 0:
+            raise ValueError("Password can't be an empty string.")
+        return value
+
+    @root_validator
+    def passwords_match(cls, values):
+        pw1, pw2 = values.get("password"), values.get("password_confirmation")
+        if pw1 != pw2:
+            raise ValueError(f"Passwords do not match ({pw1} vs. {pw2}).")
+        return values
+
+class UserForgotPassword(BaseModel):
+    email: EmailStr
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -69,6 +90,22 @@ class ContentEdit(BaseModel):
     filetype: Optional[str]
 
 
+class ExternalContentFind(BaseModel):
+    id: Optional[str]
+    short: Optional[str]
+    url: Optional[str]
+
+class ExternalContentAdd(BaseModel):
+    short: str
+    long: Optional[str]
+    url: str
+
+class ExternalContentEdit(BaseModel):
+    short: Optional[str]
+    long: Optional[str]
+    url: Optional[str]
+
+
 class GroupFind(BaseModel):
     id: Optional[str]
     short: Optional[str]
@@ -97,3 +134,4 @@ class NodeEdit(BaseModel):
     short: Optional[str]
     long: Optional[str]
     contents: Optional[List[Content]]
+    external_contents: Optional[List[ExternalContent]]

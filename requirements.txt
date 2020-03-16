@@ -9,6 +9,7 @@ python-multipart
 pytypes
 motor
 uvicorn
+sendgrid
 
 # Testing
 async-asgi-testclient

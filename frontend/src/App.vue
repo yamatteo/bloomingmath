@@ -1,48 +1,65 @@
 <template>
-  <div>
-    <LoginModal v-if="!authorized && see_login_modal"/>
-    <SignupModal v-if="!authorized && see_signup_modal" />
-    <Landing v-if="authorized && (see_page=='landing' | see_page == null)" />
-    <Profile v-if="authorized && see_page=='profile'" />
-    <AdminDashboard v-if="authorized && see_page=='admin'" />
-    <ModalPlane />
+  <div id="app">
+    <ModalLayer></ModalLayer>
+    <Navbar :brandClick="goto('main')">
+      <template v-slot:brand>Bloomingmath</template>
+
+      <NavbarPill v-if="logged" icon="user" text="Profilo" :onClick="goto('profile')"></NavbarPill>
+      <NavbarPill v-if="logged" icon="power-off" text="Esci" :onClick="logout"></NavbarPill>
+    </Navbar>
+
+    <MainPage v-if="page_name == 'main'"></MainPage>
+    <ProfilePage v-else-if="page_name == 'profile'"></ProfilePage>
+    <ExternalContentEditPage v-else-if="page_name == 'external_content_edit'"></ExternalContentEditPage>
+    <NotThisPage v-else></NotThisPage>
   </div>
 </template>
 
 <script>
 export default {
+  name: "App",
   components: {
-    Landing: () => import("@/components/Landing.vue"),
-    Profile: () => import("@/components/Profile.vue"),
-    AdminDashboard: () => import("@/components/AdminDashboard"),
-    LoginModal: () => import("@/components/LoginModal.vue"),
-    SignupModal: () => import("@/components/SignupModal.vue"),
-    ModalPlane: () => import("@/components/ModalPlane")
+    ModalLayer: () => import("@/components/ModalLayer"),
+    Navbar: () => import("@/components/BaseNavbar"),
+    NavbarPill: () => import("@/components/BaseNavbarPill"),
+
+    MainPage: () => import("@/components/pages/MainPage"),
+    ProfilePage: () => import("@/components/pages/ProfilePage"),
+    ExternalContentEditPage: () => import("@/components/pages/ExternalContentEditPage"),
+    NotThisPage: () => import("@/components/pages/NotThisPage"),
   },
-  props: {},
-  data: () => ({}),
   computed: {
-    authorized() {
-      return this.$store.state.authtoken != null;
+    logged() {
+      return this.$store.state.authtoken != null
     },
-    see_login_modal() {
-      return this.$store.state.modal == 'login' | this.$store.state.modal == null
+    page_name() {
+      try {return this.$store.state.page.name}
+      catch {return null}
+    }
+  },
+  methods: {
+    logout() {
+      this.$session.destroy();
+      this.$store.dispatch("auth_refresh");
     },
-    see_signup_modal() {
-      return this.$store.state.modal == 'signup'
-    },
-    see_page() {
-      return this.$store.state.see_page
+    goto(page_name) {
+      return () => {
+        this.$store.commit("page", {'name': page_name})
+      }
     }
   },
   mounted () {
-    this.$store.dispatch("login_actualization", this.$session.get("authtoken", null))
+    this.$store.dispatch("auth_refresh");
   }
 };
 </script>
 
 <style>
-.container {
-  margin-top: 50px;
+#app {
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-align: left;
+  color: #334;
 }
 </style>

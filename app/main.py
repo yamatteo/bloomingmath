@@ -7,12 +7,14 @@ from starlette.staticfiles import StaticFiles
 
 from extensions.middlewares import middleware_engine
 from extensions.mongo import mongo_engine
-from routers import users, contents, nodes, groups
+from routers import users, contents, nodes, groups, external_contents
 
 load_dotenv()
 FASTAPI_ENVIRONMENT = getenv("FASTAPI_ENVIRONMENT", "development")
 MONGODB_URI = getenv("MONGODB_URI", "mongodb://localhost:27017")
 MAX_FIND = int(getenv("MAX_FIND", 50))
+
+
 
 # App's title is used by mongo extension to locate the database
 app = FastAPI(title="Bloomingmath")
@@ -47,6 +49,7 @@ async def reset_development_database():
 app.include_router(users.router, prefix="/users", tags=["users"])
 app.include_router(nodes.router, prefix="/nodes", tags=["nodes"])
 app.include_router(contents.router, prefix="/contents", tags=["contents"])
+app.include_router(external_contents.router, prefix="/external_contents", tags=["external_contents"])
 app.include_router(groups.router, prefix="/groups", tags=["groups"])
 
 

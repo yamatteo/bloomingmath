@@ -1,89 +1,75 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
-import lodash from 'lodash'
 
 Vue.use(Vuex)
 
 export default new Vuex.Store({
   state: {
-    see_page: null,
-    active_modal: null,
-    modal: 'login',
     authtoken: null,
     current_user: null,
-    groups: [],
-    nodes: [],
-    admin_update: false
+    alert: null,
+    page: null,
   },
   mutations: {
-    see_modal (state, payload) {
-      console.log("Commit >> modal = ", payload);
-      
-      state.modal = payload
-    },
-    authtoken (state, payload) {
-      console.log("Commit >> authtoken", payload);
-      
+    authtoken(state, payload) {
       Vue.axios.defaults.headers.common['Authorization'] = 'Bearer' + ' ' + payload;
       state.authtoken = payload
     },
-    current_user (state, payload) {
-      console.log("Commit >> current_user", payload);
-      
+    current_user(state, payload) {
       state.current_user = payload
     },
-    see_page (state, payload) {
-      console.log("Commit >> see_page = ", payload);
-      
-      state.see_page = payload
+    page(state, payload) {
+      state.page = payload
     },
-    groups (state, payload) {
-      console.log("Commit >> groups = ", payload);
-      state.groups = payload
-    },
-    active_modal (state, payload) {
-      console.log("Commit >> active_modal = ", payload);
-      state.active_modal = lodash.cloneDeep(payload)
-    },
-    admin_update (state, payload) {
-      state.admin_update = payload
-    }
-  },
-  actions: {
-    async login_actualization (context, payload) {
-      console.log("Action >> login_actualization", payload);
-
-      context.commit("authtoken", payload)
-      if (payload != null) {
-        await context.dispatch("fetch_current_user");
+    warning_alert(state, payload) {
+      state.alert = {
+        variant: "warning",
+        message: payload
       }
     },
-    async fetch_groups (context) {
-      console.log("Action >> fetch_groups ...");
-      
-      Vue.axios.get("/groups/browse").then((response) => {
-        console.log("Backend >> ", response.data);
-        context.commit("groups", response.data)
-      }).catch((err) => {
-        console.log("Error >> ", err);
-        
-      })
+    success_alert(state, payload) {
+      state.alert = {
+        variant: "success",
+        message: payload
+      }
     },
-    async fetch_current_user (context) {
-      console.log("Action >> fetch_current_user ...");
-      
+    no_alert(state) {
+      state.alert = null
+    },
+
+  },
+  actions: {
+    async auth_refresh(context) {
+      const authtoken = this._vm.$session.get("authtoken", null)
+      context.commit("authtoken", authtoken)
+      console.log("Auth token?", authtoken)
+
+      if (authtoken) {
+        Vue.axios.post("/users/current").then((response) => {
+          context.commit("current_user", response.data)
+          context.commit("page", {name: "main"})
+        }).catch((err) => {
+          console.log(err);
+          this._vm.$session.set("authtoken", null)
+          context.commit("authtoken", null)
+          context.commit("current_user", null)
+          context.commit("page", null)
+        })
+      }
+      else {
+        context.commit("current_user", null)
+      }
+    },
+    async fetch_cu(context) {
       Vue.axios.post("/users/current").then((response) => {
         context.commit("current_user", response.data)
       }).catch((err) => {
-        console.log("Error >>", err);
-        
+        console.log(err);
+        this._vm.$session.set("authtoken", null)
         context.commit("authtoken", null)
         context.commit("current_user", null)
-      });
-
-      // context.dispatch("fetch_nodes")
-      // await context.dispatch("fetch_groups")
-    },
+      })
+    }
   },
   modules: {
   }
