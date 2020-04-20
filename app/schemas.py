@@ -1,4 +1,4 @@
-from typing import Optional, List, Union
+from typing import Optional, List, Union, Any
 
 from pydantic import BaseModel, EmailStr, validator, root_validator
 from models import User, Content, Node, Group, ExternalContent, Model
@@ -54,6 +54,9 @@ class UserLogin(BaseModel):
             raise ValueError("Password can't be an empty string.")
         return value
 
+class UserFind(BaseModel):
+    id: Optional[Any]
+    email: Optional[Any]
 
 class UserFindOne(BaseModel):
     id: Optional[str]

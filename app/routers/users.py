@@ -7,6 +7,7 @@ from extensions.security import get_password_hash, create_access_token
 from models import User, Content, Group, Node, ExternalContent
 from routers import get_current_user, admin_only
 from schemas import UserLogin, UserFindOne, UserSignup, UserEdit, UserAdd, UserPasswordReset, UserForgotPassword
+from schemas import UserFind
 from extensions.emails import send_password_reset_email
 
 router = APIRouter()
@@ -120,8 +121,8 @@ async def password_reset(password_reset_form: UserPasswordReset):
 
 
 @router.api_route("/browse", methods=["GET", "POST"], dependencies=[Depends(admin_only)])
-async def browse_users() -> List[User]:
-    return await User.find()
+async def browse_users(find: UserFind) -> List[User]:
+    return await User.find(find=find.dict(exclude_unset=True))
 
 
 @router.api_route("/read", methods=["GET", "POST"], dependencies=[Depends(admin_only)])
