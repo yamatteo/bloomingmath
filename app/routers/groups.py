@@ -64,6 +64,7 @@ async def read_group(find: GroupFind, with_nodes: bool = Body(False), with_other
 
 @router.post("/edit", dependencies=[Depends(admin_only)])
 async def edit_group(find: GroupFind, data: GroupEdit):
+    print("Editing", find, data)
     return await Group.find_one_and_set(find=find.dict(exclude_unset=True), data=data.dict(exclude_unset=True))
 
 

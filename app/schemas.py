@@ -1,7 +1,7 @@
-from typing import Optional, List
+from typing import Optional, List, Union
 
 from pydantic import BaseModel, EmailStr, validator, root_validator
-from models import User, Content, Node, Group, ExternalContent
+from models import User, Content, Node, Group, ExternalContent, Model
 
 
 class UserSignup(BaseModel):
@@ -118,7 +118,7 @@ class GroupAdd(BaseModel):
 class GroupEdit(BaseModel):
     short: Optional[str]
     long: Optional[str]
-    nodes: Optional[List[Node]]
+    nodes: Optional[List[Union[Node, Model]]]
 
 
 class NodeFind(BaseModel):
