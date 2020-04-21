@@ -49,7 +49,7 @@ class Node(Model):
     long: Optional[str] = ""
     contents: Many[Content] = []
     external_contents: Many[ExternalContent] = []
-    externals: List[External]
+    externals: List[External] = []
 
 class Group(Model):
     collection_name = "groups"
