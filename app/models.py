@@ -1,6 +1,8 @@
 from extensions.mongodb_orm import Model, ModelWithContentFile
 from extensions.mongodb_orm import One, Maybe, Many
+from pydantic import BaseModel as PydanticBaseModel
 from pydantic import EmailStr
+from typing import List
 from typing import Optional
 from extensions.security import verify_password, get_password_hash
 
@@ -35,12 +37,19 @@ class ExternalContent(Model):
     url: str
 
 
+class External(PydanticBaseModel):
+    short: str = "External resource"
+    long: str = ""
+    url: str
+
+
 class Node(Model):
     collection_name: str = "nodes"
     short: str
     long: Optional[str] = ""
     contents: Many[Content] = []
     external_contents: Many[ExternalContent] = []
+    externals: List[External]
 
 class Group(Model):
     collection_name = "groups"
