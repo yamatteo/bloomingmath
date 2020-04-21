@@ -1,4 +1,5 @@
 from typing import Optional
+from typing import List
 
 from fastapi import APIRouter, Depends, Body
 
@@ -62,8 +63,8 @@ async def current_nodes(current_user: User = Depends(get_current_user)):
 
 
 @router.post("/browse", dependencies=[Depends(admin_only)])
-async def browse_nodes():
-    return await Node.find()
+async def browse_nodes(find: NodeFind) -> List[Node]:
+    return await Node.find(find=find.dict(exclude_unset=True))
 
 
 @router.post("/read", dependencies=[Depends(admin_only)])

@@ -125,9 +125,9 @@ class GroupEdit(BaseModel):
 
 
 class NodeFind(BaseModel):
-    id: Optional[str]
-    short: Optional[str]
-    long: Optional[str]
+    id: Optional[Any]
+    short: Optional[Any]
+    long: Optional[Any]
 
 class NodeAdd(BaseModel):
     short: str
