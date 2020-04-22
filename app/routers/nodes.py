@@ -80,6 +80,8 @@ async def read_node(find: NodeFind, with_contents: bool = Body(False), with_othe
 
 @router.post("/edit", dependencies=[Depends(admin_only)])
 async def edit_node(find: NodeFind, data: NodeEdit):
+    print("find", find)
+    print("data", data)
     return await Node.find_one_and_set(find=find.dict(exclude_unset=True), data=data.dict(exclude_unset=True))
 
 

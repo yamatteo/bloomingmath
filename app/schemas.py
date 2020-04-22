@@ -2,6 +2,7 @@ from typing import Optional, List, Union, Any
 
 from pydantic import BaseModel, EmailStr, validator, root_validator
 from models import User, Content, Node, Group, ExternalContent, Model
+from models import External
 
 
 class UserSignup(BaseModel):
@@ -138,3 +139,4 @@ class NodeEdit(BaseModel):
     long: Optional[str]
     contents: Optional[List[Content]]
     external_contents: Optional[List[ExternalContent]]
+    externals: Optional[List[External]]
