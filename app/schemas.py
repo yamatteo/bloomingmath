@@ -137,6 +137,6 @@ class NodeAdd(BaseModel):
 class NodeEdit(BaseModel):
     short: Optional[str]
     long: Optional[str]
-    contents: Optional[List[Content]]
-    external_contents: Optional[List[ExternalContent]]
+    contents: Optional[List[Union[Model, Content]]]
+    external_contents: Optional[List[Union[Model, ExternalContent]]]
     externals: Optional[List[External]]
