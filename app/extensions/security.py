@@ -9,7 +9,7 @@ load_dotenv()
 
 SECRET_KEY = str(getenv("SECRET_KEY", "super-secret"))
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
+ACCESS_TOKEN_EXPIRE_MINUTES = 600
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

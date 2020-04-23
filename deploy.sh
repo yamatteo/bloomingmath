@@ -1,16 +1,16 @@
 #! /bin/bash
 
-cd frontend
+#cd frontend
 
-npm run build
+#npm run build
 
-cd ..
+#cd ..
 
-cd frontend_stag
+#cd frontend_stag
 
-npm run build
+#npm run build
 
-cd ..
+#cd ..
 
 heroku container:login
 
