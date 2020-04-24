@@ -19,31 +19,41 @@ MAX_FIND = int(getenv("MAX_FIND", 50))
 # App's title is used by mongo extension to locate the database
 app = FastAPI(title="Bloomingmath")
 
-app.mount("/static", StaticFiles(directory="../dist"), name="static")
+# app.mount("/static", StaticFiles(directory="../dist"), name="static")
+app.mount("/js", StaticFiles(directory="../refront/js"), name="static")
+app.mount("/fontawesome", StaticFiles(directory="../refront/fontawesome"), name="static")
 mongo_engine.init_app(app, uri=MONGODB_URI, env=FASTAPI_ENVIRONMENT)
 middleware_engine.init_app(app)
-app.mount("/stag/static", StaticFiles(directory="../stag"), name="stag_static")
+# app.mount("/stag/static", StaticFiles(directory="../stag"), name="stag_static")
+
 
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root():
-    with open("../dist/index.html", "r") as f:
+    # with open("../dist/index.html", "r") as f:
+    with open("../refront/index.html", "r") as f:
         return f.read()
 
-@app.get("/stag", response_class=HTMLResponse)
-async def read_stag():
-    with open("../stag/index.html", "r") as f:
-        return f.read()
+@app.get("/favicon.ico", response_class=HTMLResponse)
+async def read_favicon():
+    from fastapi.responses import FileResponse
+    # with open("../dist/index.html", "r") as f:
+    return FileResponse("../refront/favicon.ico")
+
+# @app.get("/stag", response_class=HTMLResponse)
+# async def read_stag():
+#     with open("../stag/index.html", "r") as f:
+#         return f.read()
 
 
-@app.get("/reset_development_database")
-async def reset_development_database():
-    if FASTAPI_ENVIRONMENT == "development":
-        from tests.conftest import populate
-
-        await populate()
-    else:
-        raise RuntimeError("Not in development environment!")
+# @app.get("/reset_development_database")
+# async def reset_development_database():
+#     if FASTAPI_ENVIRONMENT == "development":
+#         from tests.conftest import populate
+#
+#         await populate()
+#     else:
+#         raise RuntimeError("Not in development environment!")
 
 
 app.include_router(users.router, prefix="/users", tags=["users"])
