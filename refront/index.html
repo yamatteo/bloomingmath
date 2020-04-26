@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Bloomingmath</title>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <!-- Load required Bootstrap and BootstrapVue CSS -->
+    <link
+      type="text/css"
+      rel="stylesheet"
+      href="//unpkg.com/bootstrap/dist/css/bootstrap.min.css"
+    />
+    <link
+      type="text/css"
+      rel="stylesheet"
+      href="//unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.min.css"
+    />
+    <link href="/fontawesome/css/fontawesome.css" rel="stylesheet" />
+    <link href="/fontawesome/css/solid.css" rel="stylesheet" />
+
+    <!-- Load polyfills to support older browsers -->
+    <script
+      src="//polyfill.io/v3/polyfill.min.js?features=es2015%2CIntersectionObserver"
+      crossorigin="anonymous"
+    ></script>
+
+    <!-- Load Vue followed by BootstrapVue -->
+    <script src="https://unpkg.com/vue"></script>
+    <script src="https://unpkg.com/vuex"></script>
+    <script src="//unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.min.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://unpkg.com/http-vue-loader"></script>
+  </head>
+
+  <body>
+    <div id="app">
+      <main-app></main-app>
+    </div>
+
+    <script>
+      // const host = "http://127.0.0.1:8000";
+      const host = "https://bloomingmath.herokuapp.com";
+      const post = function (relative_url, data = {}) {
+        return axios.post(host + relative_url, data);
+      };
+
+      const get = function (relative_url) {
+        return axios.get(host + relative_url);
+      };
+
+      const store = new Vuex.Store({
+        state: {
+          authtoken: null,
+          cards: [],
+          current_user: null,
+          page: {},
+          alerts: [],
+        },
+        mutations: {
+          say(state, payload) {
+            state.alerts = [payload, ...state.alerts];
+          },
+          delete_alerts(state) {
+            state.alerts = [];
+          },
+          authtoken(state, payload) {
+            axios.defaults.headers.common["Authorization"] =
+              "Bearer" + " " + payload;
+            state.authtoken = payload;
+            if (payload == null) {
+              localStorage.removeItem("authtoken");
+            } else {
+              localStorage.setItem("authtoken", payload);
+            }
+          },
+          current_user(state, payload) {
+            state.current_user = payload;
+          },
+          page(state, payload) {
+            state.page = payload;
+          },
+          replace_cards(state, payload) {
+            state.cards = payload;
+          },
+        },
+        actions: {
+          update_authtoken(context, payload) {
+            return new Promise((resolve, reject) => {
+              axios.defaults.headers.common["Authorization"] =
+                "Bearer" + " " + payload;
+              get("/users/current")
+                .then((response) => {
+                  context.commit("authtoken", payload);
+                  context.commit("current_user", response.data);
+                  resolve();
+                })
+                .catch((err) => {
+                  // console.log(err);
+                  context.commit("authtoken", null);
+                  context.commit("current_user", null);
+                  reject();
+                });
+            });
+          },
+        },
+      });
+
+      Vue.mixin({
+        methods: {
+          goto(name, args) {
+            store.commit("delete_alerts");
+            store.commit("page", { name: name, args: args });
+          },
+          say(message, variant = "primary") {
+            store.commit("say", {
+              message: message,
+              variant: variant,
+              show: true,
+              dismissible: true,
+            });
+          },
+          pushcard(name = "message", data = {}) {
+            store.commit("replace_cards", [
+              { name: name, data: data },
+              ...store.state.cards,
+            ]);
+          },
+          queuecard(name = "message", data = {}) {
+            store.commit("replace_cards", [
+              ...store.state.cards,
+              { name: name, data: data },
+            ]);
+          },
+          removecard(name, data = {}) {
+            console.log("removing", { name: name, data: data });
+
+            store.commit(
+              "replace_cards",
+              store.state.cards.filter((card) => {
+                if (card.name != name) return true;
+                for (let key of Object.keys(data)) {
+                  if (card.data[key] != data[key]) return true;
+                }
+                return false;
+              })
+            );
+          },
+        },
+      });
+
+      new window.Vue({
+        el: "#app",
+
+        components: {
+          "main-app": window.httpVueLoader("/js/components/App.vue"),
+        },
+      });
+    </script>
+  </body>
+</html>
